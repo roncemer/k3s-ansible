@@ -21,9 +21,9 @@
 - name: "Determine whether k3s is installed on the host as server, agent, or neither"
   ansible.builtin.shell:
     cmd: |
-        if [ -x /usr/local/bin/k3s-uninstall.sh ]; then
+        if [ -x /var/lib/rancher/k3s/server ]; then
             echo "server"
-        elif [ -x /usr/local/bin/k3s-agent-uninstall.sh ]; then
+        elif [ -x /var/lib/rancher/k3s/agent ]; then
             echo "agent"
         fi
   args:
@@ -62,7 +62,7 @@
 - name: "Install or reinstall k3s on each node, in order"
   when: inventory_hostname == k3s_install_host
   ansible.builtin.include_tasks:
-    file: "k3s-install-single-node.yml"
+    file: "k3s_install_single_node.yml"
   loop: '{{ ansible_play_hosts_all }}'
   loop_control:
     loop_var: k3s_install_host
