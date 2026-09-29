@@ -14,3 +14,6 @@
       tags: [headlamp]
     - name: headlamp_token
       tags: [headlamp, headlamp_token]
+    # TODO: Add role for installing CNI plugins
+    # TODO: Add role for installing multus-cni
+    # TODO: Add role for installing longhorn
