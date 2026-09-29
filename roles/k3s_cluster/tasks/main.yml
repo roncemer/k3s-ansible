@@ -70,3 +70,23 @@
 - name: "Show the k3s installation composite fact after installing or reinstalling k3s"
   ansible.builtin.debug:
     var: k3s_installed_info
+
+- name: "Wait for k3s to come up and be accessible"
+  when: 'my_k3s_node_role == "server"'
+  block:
+    - name: "Wait for the k3s service to start listening on the default port"
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 6443
+        state: started
+        timeout: 60
+      changed_when: false
+
+    - name: "Wait for the k3s service to be fully operational"
+      become: true
+      ansible.builtin.shell: "kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml get node"
+      register: result_wait_for_k3s_api
+      retries: 10
+      delay: 6
+      until: result_wait_for_k3s_api.rc == 0
+      changed_when: false
