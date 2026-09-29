@@ -1,5 +1,7 @@
+# TODO: Find a way to check whether Multus-CNI is already installed, and the correct version and configuration, before attempting installation.
 - name: "Install Multus-CNI"
   when: install_multus_cni
+  run_once: true
   become: true
   block:
     - name: "Create a temporary directory for the Multus-CNI download and extraction"
@@ -7,6 +9,7 @@
         state: directory
         prefix: "multus-cni"
       register: multus_cni_tempdir
+      changed_when: false
 
     - name: "Download, extract and install Multus-CNI"
       block:
@@ -14,17 +17,20 @@
           ansible.builtin.get_url:
             url: '{{ multus_cni_download_url }}'
             dest: "{{ multus_cni_tempdir.path }}/multus-cni.tar.gz"
+          changed_when: false
 
         - name: "Extract Multus-CNI"
           ansible.builtin.unarchive:
             src: "{{ multus_cni_tempdir.path }}/multus-cni.tar.gz"
             dest: "{{ multus_cni_tempdir.path }}"
             remote_src: true
+          changed_when: false
 
         - name: "Template the Multus-CNI kustomization.yaml.j2 manifest"
           ansible.builtin.template:
             src: "kustomization.yaml.j2"
             dest: "{{ multus_cni_tempdir.path }}/kustomization.yaml"
+          changed_when: false
 
         - name: "Apply the Multus-CNI kustomization.yaml manifest"
           ansible.builtin.shell:
@@ -50,3 +56,4 @@
           ansible.builtin.file:
             path: "{{ multus_cni_tempdir.path }}"
             state: absent
+          changed_when: false

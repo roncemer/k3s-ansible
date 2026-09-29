@@ -45,6 +45,7 @@
             state: directory
             prefix: "cni-plugins"
           register: cni_plugins_tempdir
+          changed_when: false
 
         - name: "Download, extract and install the CNI plugins"
           block:
@@ -52,12 +53,14 @@
               ansible.builtin.get_url:
                 url: '{{ cni_plugins_download_url }}'
                 dest: "{{ cni_plugins_tempdir.path }}/cni-plugins-linux.tgz"
+              changed_when: false
 
             - name: "Extract CNI plugins"
               ansible.builtin.unarchive:
                 src: "{{ cni_plugins_tempdir.path }}/cni-plugins-linux.tgz"
                 dest: "{{ cni_plugins_tempdir.path }}"
                 remote_src: true
+              changed_when: false
 
             - name: "Move CNI plugins into place"
               ansible.builtin.command:
@@ -82,3 +85,4 @@
               ansible.builtin.file:
                 path: "{{ cni_plugins_tempdir.path }}"
                 state: absent
+              changed_when: false

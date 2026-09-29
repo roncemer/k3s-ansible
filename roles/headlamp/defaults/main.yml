@@ -1,0 +1,5 @@
+# Whether to install Headlamp.  Headlamp is installed via the Headlamp Helm chart, so if
+# install_headlamp is true and install_helm is false, the Headlamp installation will fail.
+install_headlamp: true
+# The Headlamp Helm chart version to install.
+headlamp_helm_chart_version: "0.45.0"

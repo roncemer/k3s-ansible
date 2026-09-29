@@ -9,6 +9,7 @@
   args:
     executable: /bin/bash
   register: result_headlamp_token
+  changed_when: false
 
 - name: "Display the Headlamp token"
   run_once: true
