@@ -45,8 +45,7 @@
           register: multus_cni_apply_result
           changed_when: "multus_cni_apply_result.rc == 99"
           failed_when: "multus_cni_apply_result.rc not in [0, 99]"
-
-    - always:
+      always:
         - name: "Remove the temporary directory for the Multus-CNI download and extraction"
           ansible.builtin.file:
             path: "{{ multus_cni_tempdir.path }}"
