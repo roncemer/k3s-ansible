@@ -1,0 +1,42 @@
+# The creation of the k3s user on server nodes is optional.  If created, the user can be sudo'd to in order to
+# run kubectl commands on the cluster.
+# The k3s user will only be created on server nodes.
+create_k3s_user: true
+
+# Username for the k3s user.
+k3s_user: k3s
+# Home directory for the k3s user.
+k3s_user_home: "/home/{{ k3s_user }}"
+# UID for the k3s user.
+k3s_user_id: 2121
+
+# The k3s group is always created on server nodes, because the group ownership of the kubeconfig file (/etc/rancher/k3s/k3s.yaml)
+# is set to this group when k3s is installed in server mode on a node.
+# This allows any user who is a member of the k3s group to access the kubeconfig file, in order to run kubectl
+# commands on the cluster.
+# The k3s group will only be created on server nodes.
+
+# Group name for the k3s group.
+k3s_group: k3s
+# GID for the k3s group.
+k3s_group_id: 2121
+
+# The inventory hosts group name for the nodes in the k3s cluster.
+k3s_hosts_group: "all_hosts"
+
+# The number of k3s server nodes.  All nodes beyond this number will be configured as agent nodes.
+# This must be an odd number, and must be less than or equal to the number of hosts in the inventory
+# hosts group specified in the k3s_hosts_group fact.
+num_k3s_server_nodes: '{{ 3 if (groups[k3s_hosts_group] | length) >= 3 else 1 }}'
+
+# Whether to install Helm.  Note that Helm is required in order to install a lot of other packages,
+# so if this is set to false, attempts to install any of the packages which require Helm will fail.
+install_helm: true
+# The Helm version to install.
+helm_version: "v4.3.0"
+
+# Whether to install Headlamp.  Headlamp is installed via the Headlamp Helm chart, so if
+# install_headlamp is true and install_helm is false, the Headlamp installation will fail.
+install_headlamp: true
+# The Headlamp Helm chart version to install.
+headlamp_helm_chart_version: "0.45.0"

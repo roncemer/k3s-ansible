@@ -1,0 +1,2 @@
+# The k3s role (server or agent) for the current host.
+my_k3s_node_role: '{{ "server" if (groups[k3s_hosts_group] | ansible.utils.index_of("eq", inventory_hostname)) < num_k3s_server_nodes else "agent" }}'

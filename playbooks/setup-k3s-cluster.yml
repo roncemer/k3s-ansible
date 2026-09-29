@@ -1,0 +1,16 @@
+- name: "Set up a K3s cluster"
+  hosts: all_hosts
+
+  roles:
+    - name: init
+      tags: [always]
+    - name: prereq
+      tags: [k3s, prereq]
+    - name: k3s-cluster
+      tags: [k3s, k3s-cluster]
+    - name: helm
+      tags: [helm]
+    - name: headlamp
+      tags: [headlamp]
+    - name: headlamp-token
+      tags: [headlamp, headlamp-token]

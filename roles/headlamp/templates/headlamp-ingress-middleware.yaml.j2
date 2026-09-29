@@ -1,0 +1,12 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: add-trailing-slash
+  namespace: kube-system
+spec:
+  redirectRegex:
+    # Matches the exact path and captures any query strings
+    regex: '^(.*)/headlamp$'
+    # Redirects to /headlamp/ preserving the query strings
+    replacement: '${1}/headlamp/'
+    permanent: false

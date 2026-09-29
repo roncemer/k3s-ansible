@@ -1,0 +1,16 @@
+- name: "Create a Headlamp token"
+  run_once: true
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+
+      kubectl -n kube-system create token headlamp-admin --duration=12h
+  args:
+    executable: /bin/bash
+  register: result_headlamp_token
+
+- name: "Display the Headlamp token"
+  run_once: true
+  ansible.builtin.debug:
+    msg: "Headlamp token: {{ result_headlamp_token.stdout }} "

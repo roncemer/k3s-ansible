@@ -1,0 +1,4 @@
+- name: "Assert that num_k3s_server_nodes is odd, and less than or equal to the number of k3s nodes"
+  run_once: true
+  ansible.builtin.assert:
+    that: 'num_k3s_server_nodes is odd and num_k3s_server_nodes > 0 and num_k3s_server_nodes <= (groups[k3s_hosts_group] | length)'

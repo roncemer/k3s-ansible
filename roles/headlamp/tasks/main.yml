@@ -1,0 +1,63 @@
+- name: "Fail if we are trying to install Headlamp but Helm is not installed"
+  when: 'install_headlamp and not install_helm'
+  ansible.builtin.fail:
+    msg: "Headlamp installation requires Helm. Please set install_helm to true if install_headlamp is true."
+
+- name: "Create a temporary directory for the Headlamp ingress middleware manifest"
+  when: 'install_headlamp'
+  run_once: true
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: "headlamp-middleware"
+  register: headlamp_middleware_tempdir
+
+- name: "Template and apply the Headlamp ingress middleware manifest; remove the temporary directory"
+  when: 'install_headlamp'
+  run_once: true
+  block:
+
+    - name: "Template the Headlamp ingress middleware manifest"
+      ansible.builtin.template:
+        src: "headlamp-ingress-middleware.yaml.j2"
+        dest: "{{ headlamp_middleware_tempdir.path }}/headlamp-ingress-middleware.yaml"
+
+    - name: "Apply the Headlamp ingress middleware manifest"
+      become: true
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+
+          kubectl apply -f "{{ headlamp_middleware_tempdir.path }}/headlamp-ingress-middleware.yaml"
+      args:
+        executable: /bin/bash
+
+  always:
+    - name: "Remove the temporary directory for the Headlamp ingress middleware manifest"
+      ansible.builtin.file:
+        path: "{{ headlamp_middleware_tempdir.path }}"
+        state: absent
+
+- name: "Install Headlamp via the Headlamp Helm chart"
+  when: 'install_headlamp'
+  run_once: true
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+
+      helm repo add headlamp "{{ headlamp_helm_chart_url }}" || true
+      helm repo update
+      helm upgrade --install headlamp headlamp/headlamp \
+          --namespace kube-system \
+          --version "{{ headlamp_helm_chart_version }}" \
+          --set serviceAccount.create=true \
+          --set serviceAccount.name=headlamp-admin \
+          --set clusterRole.create=true \
+          --set clusterRole.name=cluster-admin \
+          --set config.baseURL="/headlamp" \
+          --set ingress.enabled=true \
+          --set ingress.hosts[0].paths[0].path=/headlamp \
+          --set ingress.hosts[0].paths[0].type=Prefix \
+          --set-json 'ingress.annotations={"traefik.ingress.kubernetes.io/router.middlewares": "kube-system-add-trailing-slash@kubernetescrd"}'
+  args:
+    executable: /bin/bash

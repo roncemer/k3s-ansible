@@ -1,0 +1,72 @@
+
+###################################################################################
+# GET INFORMATION FOR EACH NODE ABOUT ANY EXISTING K3S INSTALLATION ON THAT NODE. #
+###################################################################################
+
+- name: "Determine whether the k3s binary is installed on the host"
+  ansible.builtin.stat:
+    path: "/usr/local/bin/k3s"
+  register: stat_result_k3s_binary
+
+- name: "Determine which version of k3s is installed on the host"
+  ansible.builtin.shell:
+    cmd: |
+        [ -x /usr/local/bin/k3s ] && /usr/local/bin/k3s --version | head -1 | awk '{print $3}' | xargs
+  args:
+    executable: /bin/bash
+  register: result_get_k3s_version
+  changed_when: false
+  failed_when: false
+
+- name: "Determine whether k3s is installed on the host as server, agent, or neither"
+  ansible.builtin.shell:
+    cmd: |
+        if [ -x /usr/local/bin/k3s-uninstall.sh ]; then
+            echo "server"
+        elif [ -x /usr/local/bin/k3s-agent-uninstall.sh ]; then
+            echo "agent"
+        fi
+  args:
+    executable: /bin/bash
+  register: result_get_k3s_role
+  changed_when: false
+  failed_when: false
+
+- name: "Build a composite fact detailing the status of the k3s installation on the host"
+  ansible.builtin.set_fact:
+    k3s_installed_info:
+      is_installed: '{{ stat_result_k3s_binary.stat.exists and stat_result_k3s_binary.stat.isreg and (result_get_k3s_role.stdout | trim) != "" }}'
+      version: '{{ result_get_k3s_version.stdout | trim }}'
+      role: '{{ result_get_k3s_role.stdout | trim }}'
+      need_install_or_reinstall: |
+          {{
+              (not (stat_result_k3s_binary.stat.exists and stat_result_k3s_binary.stat.isreg and (result_get_k3s_role.stdout | trim) != ""))
+              or (result_get_k3s_version.stdout | trim) != k3s_version
+              or (result_get_k3s_role.stdout | trim) != my_k3s_node_role
+          }}
+
+- name: "Show the k3s installation composite fact before installing or reinstalling k3s"
+  ansible.builtin.debug:
+    var: k3s_installed_info
+
+# TODO: If possible, add an assertion to compare k3s_installed_info.version to k3s_version,
+#       and fail if they are more than one minor version apart in either direction.
+#       If there is ever a version 2.x.y of K3s, we would have to update the assertion logic
+#       to accommodate transitioning between the latest allowed 1.x.y version(s) and the
+#       earliest 2.x.y versions.
+
+####################################################################################
+# INSTALL OR REINSTALL K3S ON EACH NODE AS NEEDED BASED ON THE STATE OF EACH NODE. #
+####################################################################################
+
+- name: "Install or reinstall k3s on each node, in order"
+  when: inventory_hostname == k3s_install_host
+  ansible.builtin.include_tasks:
+    file: "k3s-install-single-node.yml"
+  loop: '{{ ansible_play_hosts_all }}'
+  loop_control:
+    loop_var: k3s_install_host
+
+- name: "Show the k3s installation composite fact after installing or reinstalling k3s"
+  ansible.builtin.debug:
+    var: k3s_installed_info
