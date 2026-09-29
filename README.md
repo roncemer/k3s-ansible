@@ -36,6 +36,12 @@ ansible-galaxy install -r requirements.yml
 
 Create a file named *inventories/k3s-test-cluster/ansible-become-password.txt*, and put the password for the *ansible* user which you created when you set up the VMs.
 
+NOTE: If you want to use the local copy of this collection, you can run the following command from the *examples* directory:
+```sh
+./install-local
+```
+This is also useful when making changes to the collection's playbooks or roles.  In that case, you can run the *install-local* before each playbook run, and that will ensure that you're always using the latest copy of the local playbooks and roles from the collection.
+
 ## Set the Inventory Environment Variables; Set up the K3s cluster
 
 ```sh
