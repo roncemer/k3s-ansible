@@ -4,5 +4,5 @@
   roles:
     - name: init
       tags: [always]
-    - name: headlamp-token
-      tags: [headlamp, headlamp-token]
+    - name: headlamp_token
+      tags: [headlamp, headlamp_token]

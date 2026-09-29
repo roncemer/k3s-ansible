@@ -63,7 +63,7 @@ export BECOMEPWFILE
 
 ```sh
 . ./set-ansible-inventory-k3s-test-cluster.sh
-ansible-playbook -i "$INVPATH" --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible.setup-k3s-cluster
+ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible.setup_k3s_cluster
 ```
 
 At the end of the playbook, there should be a Headlamp token.  Point a browser to <http://k3s-test-01.local/headlamp>, copy and paste the token into the token field, and click *Authenticate*.  Click on *Workloads* -> *Pods* to see all of the pods which are running on the cluster.
@@ -72,5 +72,5 @@ At the end of the playbook, there should be a Headlamp token.  Point a browser t
 
 If you need to get another Headlamp token:
 ```sh
-ansible-playbook -i "$INVPATH" --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible..headlamp-token
+ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible..headlamp_token
 ```

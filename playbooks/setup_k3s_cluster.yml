@@ -6,11 +6,11 @@
       tags: [always]
     - name: prereq
       tags: [k3s, prereq]
-    - name: k3s-cluster
-      tags: [k3s, k3s-cluster]
+    - name: k3s_cluster
+      tags: [k3s, k3s_cluster]
     - name: helm
       tags: [helm]
     - name: headlamp
       tags: [headlamp]
-    - name: headlamp-token
-      tags: [headlamp, headlamp-token]
+    - name: headlamp_token
+      tags: [headlamp, headlamp_token]
