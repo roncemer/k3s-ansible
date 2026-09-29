@@ -17,58 +17,24 @@ Handles edge cases, and has some significant built-in cluster planning logic, su
 
 See the [VMS.md](VMS.md) file for instructions to prepare three UTM VMs on your Mac for deploying K3s.
 
+NOTE: Regardless of whether you are using VMs on your desktop, hosted VMs, or real hardware, the prerequisite users and configuration changes detailed in the above-referenced document are necessary.  Please pay careful attention to setting these up correctly before proceeding.
+
 If you're not running on MacOS, you can use a different virtual machine package (VirtualBox, etc.) to create the VMs, but once the VMs are created and accessible from your laptop, the instructions are about the same.
 
-## Create a basic project
+## Test using the examples diretory
 
-Start in a new, empty directory.
-
-Create a file named *requirements.yml*, and copy the following contents into it (change version to the release tag if you want to use a specific release, which you always should do in production):
-```yaml
-collections:
-  - name: https://github.com/roncemer/k3s-ansible
-    type: git
-    version: main
+Change into the *examples* directory.  You will be working from there.
+```sh
+cd examples
 ```
 
-Install Ansible and the required Galaxy module(s).
-
+Install Ansible and the required Galaxy module(s):
 ```sh
 brew install ansible
 ansible-galaxy install -r requirements.yml
 ```
 
-## Create an inventory
-
-Run the following command to create the inventory directory:
-
-```sh
-mkdir -p inventories/k3s-test-cluster/group_vars
-```
-
-Create a file named *inventories/k3s-test-cluster/hosts*, and add the following contents into it:
-```text
-[all_hosts]
-k3s-test-01.local 
-k3s-test-02.local 
-k3s-test-03.local 
-```
-
-Create a file named *inventories/k3s-test-cluster/group_vars/all.yml*, and add the following contents into it:
-```text
-# This cluster uses sudo.ws.  Without the next line, all tasks with "become: true" will fail.
-ansible_become_exe: /usr/bin/sudo.ws
-```
-
 Create a file named *inventories/k3s-test-cluster/ansible-become-password.txt*, and put the password for the *ansible* user which you created when you set up the VMs.
-
-Create a file named *set-ansible-inventory-k3s-test-cluster.sh*, and copy the following contents into it:
-```text
-INVPATH="inventories/k3s-test-cluster"
-export INVPATH
-BECOMEPWFILE=inventories/k3s-test-cluster/ansible-become-password.txt
-export BECOMEPWFILE
-```
 
 ## Set the Inventory Environment Variables; Set up the K3s cluster
 
@@ -78,6 +44,21 @@ ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE"
 ```
 
 At the end of the playbook, there should be a Headlamp token.  Point a browser to <http://k3s-test-01.local/headlamp>, copy and paste the token into the token field, and click *Authenticate*.  Click on *Workloads* -> *Pods* to see all of the pods which are running on the cluster.
+
+## Creating a production project
+
+Copy the *examples* directory to a new directory outside of this project.
+
+Modify the requirements.yml to use a production tag of the *roncemer.k3s_ansible* Galaxy collection.
+
+Remove any non-production copy of the *roncemer.k3s_ansible* collection, and reinstall the configured version:
+```sh
+rm -rf ~/.ansible/collections/ansible_collections/roncemer/k3s_ansible
+brew install ansible  # (if not already installed)
+ansible-galaxy install -r requirements.yml
+```
+
+Create a file named *inventories/k3s-test-cluster/ansible-become-password.txt*, and put the password for the *ansible* user on your cluster.
 
 ## Other useful playbooks
 

@@ -1,0 +1,4 @@
+collections:
+  - name: https://github.com/roncemer/k3s-ansible
+    type: git
+    version: main
