@@ -1,0 +1,1 @@
+multus_cni_download_url: 'https://github.com/k8snetworkplumbingwg/multus-cni/archive/refs/tags/{{ multus_cni_version }}.tar.gz'

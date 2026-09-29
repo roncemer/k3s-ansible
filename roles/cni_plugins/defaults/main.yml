@@ -1,5 +1,5 @@
 install_cni_plugins: true
-cni_plugins_version: "1.9.1"
+cni_plugins_version: "v1.9.1"
 needed_cni_plugins:
   - ptp
   - vlan

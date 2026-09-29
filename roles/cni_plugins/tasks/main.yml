@@ -2,14 +2,14 @@
   when: install_cni_plugins
   become: true
   block:
-    - name: "Get info for the {{ cni_k3s_data_current_dir}} symlink"
+    - name: "Get info for the {{ k3s_data_current_symlink }} symlink"
       ansible.builtin.stat:
-        path: "{{ cni_k3s_data_current_dir }}"
-      register: stat_result_cni_k3s_data_current_dir
+        path: "{{ k3s_data_current_symlink }}"
+      register: stat_result_k3s_data_current_symlink
 
     - name: "Set cni_plugins_bin_dir based on the current k3s data symlink"
       ansible.builtin.set_fact:
-        cni_plugins_bin_dir: "{{ stat_result_cni_k3s_data_current_dir.stat.lnk_target + '/bin' }}"
+        cni_plugins_bin_dir: "{{ stat_result_k3s_data_current_symlink.stat.lnk_target + '/bin' }}"
 
     - name: "Check for installed CNI plugins; check each plugin's version"
       ansible.builtin.shell:
@@ -24,7 +24,7 @@
                   echo "NEED_INSTALL"
                   break
               fi
-              installed_version=$("$plugin_path" 2>&1 | grep "CNI $plugin plugin" | cut -f4 -d" " | sed -e "s/^v//")
+              installed_version=$("$plugin_path" 2>&1 | grep "CNI $plugin plugin" | cut -f4 -d" ")
               if [ "$installed_version" != {{ cni_plugins_version | quote }} ]; then
                   echo "Version mismatch: $plugin" >&2
                   echo "NEED_INSTALL"
@@ -48,7 +48,7 @@
 
         - name: "Download, extract and install the CNI plugins"
           block:
-            - name: "Download and install CNI plugins"
+            - name: "Download CNI plugins archive"
               ansible.builtin.get_url:
                 url: '{{ cni_plugins_download_url }}'
                 dest: "{{ cni_plugins_tempdir.path }}/cni-plugins-linux.tgz"

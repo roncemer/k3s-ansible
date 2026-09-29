@@ -1,0 +1,53 @@
+- name: "Install Multus-CNI"
+  when: install_multus_cni
+  become: true
+  block:
+    - name: "Create a temporary directory for the Multus-CNI download and extraction"
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: "multus-cni"
+      register: multus_cni_tempdir
+
+    - name: "Download, extract and install Multus-CNI"
+      block:
+        - name: "Download Multus-CNI archive"
+          ansible.builtin.get_url:
+            url: '{{ multus_cni_download_url }}'
+            dest: "{{ multus_cni_tempdir.path }}/multus-cni.tar.gz"
+
+        - name: "Extract Multus-CNI"
+          ansible.builtin.unarchive:
+            src: "{{ multus_cni_tempdir.path }}/multus-cni.tar.gz"
+            dest: "{{ multus_cni_tempdir.path }}"
+            remote_src: true
+
+        - name: "Template the Multus-CNI kustomization.yaml.j2 manifest"
+          ansible.builtin.template:
+            src: "kustomization.yaml.j2"
+            dest: "{{ multus_cni_tempdir.path }}/kustomization.yaml"
+
+        - name: "Apply the Multus-CNI kustomization.yaml manifest"
+          ansible.builtin.shell:
+            cmd: |
+              set -euo pipefail
+
+              set +e
+              kubectl diff -k "{{ multus_cni_tempdir.path }}"
+              retval="$?"
+              set -e
+
+              if [ "$retval" -ne 0 ]; then
+                  kubectl apply -k "{{ multus_cni_tempdir.path }}"
+                  exit 99
+              fi
+          args:
+            executable: /bin/bash
+          register: multus_cni_apply_result
+          changed_when: "multus_cni_apply_result.rc == 99"
+          failed_when: "multus_cni_apply_result.rc not in [0, 99]"
+
+    - always:
+        - name: "Remove the temporary directory for the Multus-CNI download and extraction"
+          ansible.builtin.file:
+            path: "{{ multus_cni_tempdir.path }}"
+            state: absent

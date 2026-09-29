@@ -12,7 +12,8 @@
       tags: [helm]
     - name: cni_plugins
       tags: [cni_plugins]
-    # TODO: Add role for installing multus-cni
+    - name: multus_cni
+      tags: [multus_cni]
     # TODO: Add role for installing longhorn
     - name: headlamp
       tags: [headlamp]
