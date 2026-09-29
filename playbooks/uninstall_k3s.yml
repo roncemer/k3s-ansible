@@ -1,0 +1,8 @@
+- name: "Set up a K3s cluster"
+  hosts: all_hosts
+
+  roles:
+    - name: init
+      tags: [always]
+    - name: uninstall_k3s
+      tags: [uninstall, uninstall_k3s]

@@ -1,0 +1,66 @@
+- name: "Uninstall k3s"
+  become: true
+  block:
+    - name: "Get the home directory of the become user (superuser)"
+      ansible.builtin.command: "echo $HOME"
+      register: result_get_superuser_home
+
+    - name: "Uninstall k3s server or agent, if installed"
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+
+          retval=0
+          if [ -x /usr/local/bin/k3s-uninstall.sh ]; then
+              /usr/local/bin/k3s-uninstall.sh
+              retval=99
+          fi
+          if [ -x /usr/local/bin/k3s-agent-uninstall.sh ]; then
+              /usr/local/bin/k3s-agent-uninstall.sh
+              retval=99
+          fi
+      args:
+        executable: /bin/bash
+      register: result_k3s_server_agent_uninstall
+      changed_when: 'result_k3s_server_agent_uninstall.rc == 99'
+      failed_when: 'result_k3s_server_agent_uninstall.rc not in [0, 99]'
+
+    - name: "Remove residual files and directories"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/rancher/k3s
+        - /etc/rancher/node
+        - /var/lib/rancher/k3s
+        - /var/lib/kubelet
+        - /usr/local/bin/k3s
+        - /usr/local/bin/k3s-install.sh
+        - /usr/local/bin/helm
+        - /opt/cni
+        - /etc/cni
+        - /dev/longhorn
+        - '{{ result_get_superuser_home.stdout | trim }}/.kube'
+
+    - name: "Remove the {{ k3s_user_home }}.kube directory"
+      when: create_k3s_user
+      ansible.builtin.file:
+        path: "{{ k3s_user_home }}/.kube"
+        state: absent
+
+    - name: "Attempt to remove empty directories"
+      ansible.builtin.shell:
+        cmd: |
+          set -uo pipefail
+          set +e
+
+          rmdir {{ item | quote }} && exit 99
+          exit 0
+      args:
+        executable: /bin/bash
+      register: result_rmdir
+      changed_when: 'result_rmdir.rc == 99'
+      failed_when: 'result_rmdir.rc not in [0, 99]'
+      loop:
+        - /etc/rancher
+        - /var/lib/rancher

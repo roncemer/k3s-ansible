@@ -79,9 +79,14 @@ ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE"
 
 At the end of the playbook, there should be a Headlamp token.  Point a browser to <http://k3s-test-01.local/headlamp>, copy and paste the token into the token field, and click *Authenticate*.  Click on *Workloads* -> *Pods* to see all of the pods which are running on the cluster.
 
-## Useful Playbooks
+## Other useful playbooks
 
 If you need to get another Headlamp token:
 ```sh
-ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible..headlamp_token
+ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible.headlamp_token
+```
+
+To completely uninstall k3s from all nodes in the cluster, and delete the k3s user and group:
+```sh
+ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible.uninstall_k3s
 ```
