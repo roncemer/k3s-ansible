@@ -30,7 +30,7 @@
         cmd: |
           set -euo pipefail
 
-          mv -f {{ (helm_download_tempdir.path + "/linux-" + helm_architecture + "/helm") | quote }} /usr/local/bin/helm
+          mv -f {{ (helm_download_tempdir.path + "/linux-" + helm_arch + "/helm") | quote }} /usr/local/bin/helm
       args:
         executable: /bin/bash
 

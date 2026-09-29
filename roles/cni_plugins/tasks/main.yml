@@ -1,0 +1,84 @@
+- name: "Install CNI plugins"
+  when: install_cni_plugins
+  become: true
+  block:
+    - name: "Get info for the {{ cni_k3s_data_current_dir}} symlink"
+      ansible.builtin.stat:
+        path: "{{ cni_k3s_data_current_dir }}"
+      register: stat_result_cni_k3s_data_current_dir
+
+    - name: "Set cni_plugins_bin_dir based on the current k3s data symlink"
+      ansible.builtin.set_fact:
+        cni_plugins_bin_dir: "{{ stat_result_cni_k3s_data_current_dir.stat.lnk_target + '/bin' }}"
+
+    - name: "Check for installed CNI plugins; check each plugin's version"
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+
+          cni_plugins_bin_dir={{ cni_plugins_bin_dir | quote }}
+          for plugin in {{ needed_cni_plugins | map('quote') | list | join(' ') }}; do
+              plugin_path="${cni_plugins_bin_dir}/${plugin}"
+              if [ ! -x "$plugin_path" ]; then
+                  echo "Not found: $plugin" >&2
+                  echo "NEED_INSTALL"
+                  break
+              fi
+              installed_version=$("$plugin_path" 2>&1 | grep "CNI $plugin plugin" | cut -f4 -d" " | sed -e "s/^v//")
+              if [ "$installed_version" != {{ cni_plugins_version | quote }} ]; then
+                  echo "Version mismatch: $plugin" >&2
+                  echo "NEED_INSTALL"
+                  break
+              fi
+          done
+      args:
+        executable: /bin/bash
+      register: result_check_installed_cni_plugins
+      failed_when: false
+      changed_when: false
+
+    - name: "Install or re-install CNI plugins"
+      when: 'result_check_installed_cni_plugins.rc != 0 or (result_check_installed_cni_plugins.stdout | trim) == "NEED_INSTALL"'
+      block:
+        - name: "Create a temporary directory for the CNI plugins download and extraction"
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: "cni-plugins"
+          register: cni_plugins_tempdir
+
+        - name: "Download, extract and install the CNI plugins"
+          block:
+            - name: "Download and install CNI plugins"
+              ansible.builtin.get_url:
+                url: '{{ cni_plugins_download_url }}'
+                dest: "{{ cni_plugins_tempdir.path }}/cni-plugins-linux.tgz"
+
+            - name: "Extract CNI plugins"
+              ansible.builtin.unarchive:
+                src: "{{ cni_plugins_tempdir.path }}/cni-plugins-linux.tgz"
+                dest: "{{ cni_plugins_tempdir.path }}"
+                remote_src: true
+
+            - name: "Move CNI plugins into place"
+              ansible.builtin.command:
+                cmd: mv -f "{{ (cni_plugins_tempdir.path + "/" + item) | quote }}" "{{ (cni_plugins_bin_dir + "/" + item) | quote }}"
+              loop: "{{ needed_cni_plugins }}"
+
+            - name: "Ensure that the {{ cni_plugins_cni_dir }} directory exists"
+              ansible.builtin.file:
+                path: "{{ cni_plugins_cni_dir }}"
+                state: directory
+                mode: '0755'
+
+            - name: "Create the symlinks for CNI plugins in {{ cni_plugins_cni_dir }}"
+              ansible.builtin.file:
+                src: "{{ cni_plugins_bin_dir }}/{{ item }}"
+                dest: "{{ cni_plugins_cni_dir }}/{{ item }}"
+                state: link
+              loop: "{{ needed_cni_plugins }}"
+
+          always:
+            - name: "Remove temporary directory for CNI plugins"
+              ansible.builtin.file:
+                path: "{{ cni_plugins_tempdir.path }}"
+                state: absent

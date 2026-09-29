@@ -1,0 +1,4 @@
+cni_k3s_data_current_dir: "/var/lib/rancher/k3s/data/current"
+cni_plugins_cni_dir: "/var/lib/rancher/k3s/data/cni"
+cni_plugins_arch: '{{ "arm64" if ansible_facts["architecture"] == "aarch64" else "amd64" }}'
+cni_plugins_download_url: 'https://github.com/containernetworking/plugins/releases/download/v{{ cni_plugins_version }}/cni-plugins-linux-{{ cni_plugins_arch }}-v{{ cni_plugins_version }}.tgz'
