@@ -21,9 +21,9 @@
 - name: "Determine whether k3s is installed on the host as server, agent, or neither"
   ansible.builtin.shell:
     cmd: |
-        if [ -x /var/lib/rancher/k3s/server ]; then
+        if [ -d /var/lib/rancher/k3s/server ]; then
             echo "server"
-        elif [ -x /var/lib/rancher/k3s/agent ]; then
+        elif [ -d /var/lib/rancher/k3s/agent ]; then
             echo "agent"
         fi
   args:
