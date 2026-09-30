@@ -61,10 +61,13 @@
           failed_when: "multus_cni_apply_result.rc not in [0, 99]"
 
         - name: "Create the symlink for the multus CNI plugin in {{ cni_plugins_cni_dir }}"
+          # This has to run on every node.
+          run_once: false
           ansible.builtin.file:
             src: "{{ cni_plugins_bin_dir }}/multus"
             dest: "{{ cni_plugins_cni_dir }}/multus"
             state: link
+            force: true
 
       always:
         - name: "Remove the temporary directory for the Multus-CNI download and extraction"
