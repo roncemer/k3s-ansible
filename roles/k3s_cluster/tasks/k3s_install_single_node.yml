@@ -79,7 +79,7 @@
 # INSTALL K3S ON THE NODE; JOIN THE CLUSTER IF WE HAVE ANOTHER RUNNING NODE. #
 ##############################################################################
 
-- name: "If this node is listed in the cluster, delete it"
+- name: "If this node is listed in the cluster's node list, delete it from the cluster"
   when: 'k3s_api_host != ""'
   delegate_to: '{{ k3s_api_host | default(k3s_install_host, true) }}'
   become: true
