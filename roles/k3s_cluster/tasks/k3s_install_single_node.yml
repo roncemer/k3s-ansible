@@ -79,6 +79,21 @@
 # INSTALL K3S ON THE NODE; JOIN THE CLUSTER IF WE HAVE ANOTHER RUNNING NODE. #
 ##############################################################################
 
+- name: "If this node is listed in the cluster, delete it"
+  when: 'k3s_api_host != ""'
+  delegate_to: '{{ k3s_api_host | default(k3s_install_host, true) }}'
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+
+      kubectl delete node {{ k3s_install_host.split('.')[0] | quote }}
+  args:
+    executable: /bin/bash
+  register: result_delete_my_node
+  failed_when: false
+  changed_when: 'result_delete_my_node.rc == 0'
+
 - name: "Install k3s {{ my_k3s_node_role }} on my node: {{ k3s_install_host }}"
   when: 'k3s_installed_info.need_install_or_reinstall'
   become: true
