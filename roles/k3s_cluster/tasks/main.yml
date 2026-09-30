@@ -60,7 +60,7 @@
 ####################################################################################
 
 - name: "Install or reinstall k3s on each node, in order"
-  when: inventory_hostname == k3s_install_host
+  when: inventory_hostname == k3s_install_host and k3s_installed_info.need_install_or_reinstall
   ansible.builtin.include_tasks:
     file: "k3s_install_single_node.yml"
   loop: '{{ ansible_play_hosts_all }}'
