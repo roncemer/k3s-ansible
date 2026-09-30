@@ -3,7 +3,7 @@
 ## Prepare the Virtual Machines
 
 * Install UTM.
-* Create a virtual machine with 8GB RAM and 8GB disk, name it k3s-test-01.
+* Create a virtual machine with 8GB RAM and 40GB disk, name it k3s-test-01.
 * Install Ubuntu Server 26.04.1 on the node (add yourself as a user with a password) -- you'll need an arm64 ISO for this.
 * Log into the VM.
 * Add the ansible user with a password:
