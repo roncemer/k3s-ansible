@@ -60,6 +60,10 @@ helm_version: "v4.3.0"
 install_headlamp: true
 # The Headlamp Helm chart version to install.
 headlamp_helm_chart_version: "0.45.0"
+# Extra arguments to pass to Helm when installing the Headlamp Helm chart.
+headlamp_helm_extra_args: []
+# Extra annotations for the Headlamp ingress.
+headlamp_ingress_extra_annotations: {}
 
 # Whether to install Longhorn block storage on the cluster.
 # Longhorn is installed via the Longhorn Helm chart, so if install_longhorn is true and install_helm
@@ -67,3 +71,7 @@ headlamp_helm_chart_version: "0.45.0"
 install_longhorn: true
 # The Longhorn Helm chart version to install.
 longhorn_helm_chart_version: "1.13.0"
+# Extra arguments to pass to Helm when installing the Longhorn Helm chart.
+longhorn_helm_extra_args: []
+# Extra annotations for the Longhorn ingress.
+longhorn_ingress_extra_annotations: {}
