@@ -66,14 +66,18 @@ ansible-galaxy install -r requirements.yml
 
 Create a file named *inventories/k3s-test-cluster/ansible-become-password.txt*, and put the password for the *ansible* user on your cluster.
 
-## Other useful playbooks
+## Summary of Playboks in the Collection
 
-If you need to get another Headlamp token:
-```sh
-ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible.headlamp_token
-```
+This collection contains the following playbooks:
 
-To completely uninstall k3s from all nodes in the cluster, and delete the k3s user and group:
-```sh
-ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" roncemer.k3s_ansible.uninstall_k3s
-```
+* [roncemer.k3s_ansible.setup_k3s_cluster](playbooks/setup_k3s_cluster.yml): Builds out a K3s cluster across the nodes (hosts) in the inventory.
+* [roncemer.k3s_ansible.headlamp_token](playbooks/headlamp_token.yml): Creates a new token for logging into the Headlamp dashboard.
+* [roncemer.k3s_ansible.uninstall_k3s](playbooks/uninstall_k3s.yml): Uninstalls k3s from all nodes (hosts) in the inventory.
+
+## Playbook Defaults
+
+The default values for the roles in the playbook are stored in [roles/init/defaults/main.yml](roles/init/defaults/main.yml).  You can override these values by setting them in the inventory, or, if you are calling roles directly from your own playbooks, by explicitly setting facts or passing vars to the roles which you call.
+
+## Re-using Roles in your own Playbooks
+
+If you need to write your own playbooks, as opposed to just using the playbooks which are provided in this collection, you can simply make a local copy of any of the above-referenced playbooks in your own project, and do your customizations.
