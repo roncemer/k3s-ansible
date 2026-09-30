@@ -18,7 +18,7 @@ patches:
             },
             "delegates": [
               {
-                "cniVersion": "{{ multus_cni_cni_version }}",
+                "cniVersion": "{{ multus_cni_protocol_version }}",
                 "name": "default-cni-network",
                 "plugins": [
                   {
@@ -48,7 +48,7 @@ patches:
         path: /spec/template/spec/containers/0/args
         value:
           - "--multus-conf-file=auto"
-          - "--cni-version={{ multus_cni_cni_version }}"
+          - "--cni-version={{ multus_cni_protocol_version }}"
           - "--multus-kubeconfig-file-host={{ k3s_cni_net_dir }}/multus.d/multus.kubeconfig"
   - target:
       kind: DaemonSet

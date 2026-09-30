@@ -3,6 +3,15 @@
   run_once: true
   become: true
   block:
+    - name: "Get info for the {{ k3s_data_current_symlink }} symlink"
+      ansible.builtin.stat:
+        path: "{{ k3s_data_current_symlink }}"
+      register: stat_result_k3s_data_current_symlink
+
+    - name: "Set cni_plugins_bin_dir based on the current k3s data symlink"
+      ansible.builtin.set_fact:
+        cni_plugins_bin_dir: "{{ stat_result_k3s_data_current_symlink.stat.lnk_target + '/bin' }}"
+
     - name: "Create a temporary directory for the Multus-CNI download and extraction"
       ansible.builtin.tempfile:
         state: directory
@@ -50,6 +59,13 @@
           register: multus_cni_apply_result
           changed_when: "multus_cni_apply_result.rc == 99"
           failed_when: "multus_cni_apply_result.rc not in [0, 99]"
+
+        - name: "Create the symlink for the multus CNI plugin in {{ cni_plugins_cni_dir }}"
+          ansible.builtin.file:
+            src: "{{ cni_plugins_bin_dir }}/multus"
+            dest: "{{ cni_plugins_cni_dir }}/multus"
+            state: link
+
       always:
         - name: "Remove the temporary directory for the Multus-CNI download and extraction"
           ansible.builtin.file:

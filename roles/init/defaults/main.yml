@@ -44,10 +44,10 @@ install_cni_plugins: true
 cni_plugins_version: "v1.9.1"
 
 # Whether to install multus-cni on the cluster, and the version to install.
-# The CNI version will normally always be 1.0.0, because that is the version to which multus-cni adheres.
+# The CNI protocol version will normally always be 1.0.0, because that is the version to which multus-cni adheres.
 install_multus_cni: true
 multus_cni_version: "v4.3.1"
-multus_cni_cni_version: "1.0.0"
+multus_cni_protocol_version: "1.0.0"
 
 # Whether to install Helm.  Note that Helm is required in order to install a lot of other packages,
 # so if this is set to false, attempts to install any of the packages which require Helm will fail.
