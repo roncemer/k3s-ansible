@@ -116,6 +116,29 @@
       role: '{{ my_k3s_node_role }}'
       need_install_or_reinstall: false
 
+- name: "Create a directory for k3s storage, and symlink it into place."
+  when: 'k3s_storage_dir != ""'
+  become: true
+  block:
+    - name: "Create the {{ k3s_storage_dir }}/k3s directory"
+      ansible.builtin.file:
+        path: "{{ k3s_storage_dir }}/k3s"
+        state: directory
+        mode: '0755'
+
+    - name: "Create the {{ k3s_storage_dir }}/k3s/storage directory"
+      ansible.builtin.file:
+        path: "{{ k3s_storage_dir }}/k3s/storage"
+        state: directory
+        mode: '0701'
+
+    - name: "Create a symlink pointing /var/lib/rancher/k3s/storage to {{ k3s_storage_dir }}/k3s/storage"
+      ansible.builtin.file:
+        src: "{{ k3s_storage_dir }}/k3s/storage"
+        dest: "/var/lib/rancher/k3s/storage"
+        state: link
+        force: true
+
 ########################################################################
 # CREATE THE $HOME/.kube DIRECTORY FOR THE SUPERUSER AND THE k3s USER. #
 # SYMLINK THE KUBECONFIG FILE INTO IT.                                 #

@@ -1,5 +1,0 @@
-# Whether to install Helm.  Note that Helm is required in order to install a lot of other packages,
-# so if this is set to false, attempts to install any of the packages which require Helm will fail.
-install_helm: true
-# The Helm version to install.
-helm_version: "v4.3.0"

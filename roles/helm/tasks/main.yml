@@ -20,7 +20,7 @@
   block:
 
     - name: "Create a unique temporary directory for the Helm download"
-      when: 'install_helm and my_k3s_node_role == "server"'
+      when: 'my_k3s_node_role == "server"'
       ansible.builtin.tempfile:
         state: directory
         prefix: "helm_dl_"
@@ -28,7 +28,7 @@
       changed_when: false
 
     - name: "Download and install Helm; remove the temporary directory"
-      when: 'install_helm and my_k3s_node_role == "server"'
+      when: 'my_k3s_node_role == "server"'
       block:
 
         - name: "Download the Helm tarball"

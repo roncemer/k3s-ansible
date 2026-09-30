@@ -1,10 +1,4 @@
-- name: "Fail if we are trying to install Headlamp but Helm is not installed"
-  when: 'install_headlamp and not install_helm'
-  ansible.builtin.fail:
-    msg: "Headlamp installation requires Helm. Please set install_helm to true if install_headlamp is true."
-
 - name: "Create a temporary directory for the Headlamp ingress middleware manifest"
-  when: 'install_headlamp'
   run_once: true
   ansible.builtin.tempfile:
     state: directory
@@ -13,7 +7,6 @@
   changed_when: false
 
 - name: "Template and apply the Headlamp ingress middleware manifest; remove the temporary directory"
-  when: 'install_headlamp'
   run_once: true
   block:
 
@@ -53,7 +46,6 @@
 
 # TODO: Find a way to check whether Headlamp is already installed, and the correct version and configuration, before attempting installation.
 - name: "Install Headlamp via the Headlamp Helm chart"
-  when: 'install_headlamp'
   run_once: true
   become: true
   ansible.builtin.shell:

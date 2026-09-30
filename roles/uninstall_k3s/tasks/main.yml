@@ -25,22 +25,37 @@
       changed_when: 'result_k3s_server_agent_uninstall.rc == 99'
       failed_when: 'result_k3s_server_agent_uninstall.rc not in [0, 99]'
 
+    - name: "Set k3s_dirs_and_files_to_remove fact"
+      ansible.builtin.set_fact:
+        k3s_dirs_and_files_to_remove:
+          - /etc/rancher/k3s
+          - /etc/rancher/node
+          - /var/lib/rancher/k3s
+          - /var/lib/kubelet
+          - /usr/local/bin/k3s
+          - /usr/local/bin/k3s-install.sh
+          - /usr/local/bin/helm
+          - /opt/cni
+          - /etc/cni
+          - /dev/longhorn
+          - '{{ result_get_superuser_home.stdout | trim }}/.kube'
+
+    - name: "Append directories under {{ k3s_storage_dir }} to k3s_dirs_and_files_to_remove fact"
+      when: 'k3s_storage_dir != ""'
+      ansible.builtin.set_fact:
+        k3s_dirs_and_files_to_remove: |
+          {{
+              k3s_dirs_and_files_to_remove + [
+                  k3s_storage_dir + "/k3s",
+                  k3s_storage_dir + "/longhorn",
+              ]
+          }}
+
     - name: "Remove residual files and directories"
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      loop:
-        - /etc/rancher/k3s
-        - /etc/rancher/node
-        - /var/lib/rancher/k3s
-        - /var/lib/kubelet
-        - /usr/local/bin/k3s
-        - /usr/local/bin/k3s-install.sh
-        - /usr/local/bin/helm
-        - /opt/cni
-        - /etc/cni
-        - /dev/longhorn
-        - '{{ result_get_superuser_home.stdout | trim }}/.kube'
+      loop: '{{ k3s_dirs_and_files_to_remove }}'
 
     - name: "Remove the {{ k3s_user_home }}.kube directory"
       when: create_k3s_user

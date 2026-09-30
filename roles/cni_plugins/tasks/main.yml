@@ -1,5 +1,4 @@
 - name: "Install CNI plugins"
-  when: install_cni_plugins
   become: true
   block:
     - name: "Get info for the {{ k3s_data_current_symlink }} symlink"

@@ -10,12 +10,19 @@
       tags: [k3s, k3s_cluster]
     - name: helm
       tags: [helm]
+      when: install_helm
     - name: cni_plugins
       tags: [cni_plugins]
+      when: install_cni_plugins
     - name: multus_cni
       tags: [multus_cni]
-    # TODO: Add role for installing longhorn
+      when: install_multus_cni
+    - name: longhorn
+      tags: [longhorn]
+      when: install_longhorn
     - name: headlamp
       tags: [headlamp]
+      when: install_headlamp
     - name: headlamp_token
       tags: [headlamp, headlamp_token]
+      when: install_headlamp

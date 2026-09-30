@@ -1,6 +1,5 @@
 # TODO: Find a way to check whether Multus-CNI is already installed, and the correct version and configuration, before attempting installation.
 - name: "Install Multus-CNI"
-  when: install_multus_cni
   run_once: true
   become: true
   block:
