@@ -28,9 +28,13 @@ Change into the *examples* directory.  You will be working from there.
 cd examples
 ```
 
-Install Ansible and the required Galaxy module(s):
+Install Ansible:
 ```sh
 brew install ansible
+```
+
+Install the required Galaxy module(s):
+```sh
 ansible-galaxy install -r requirements.yml
 ```
 
@@ -60,7 +64,6 @@ Modify the requirements.yml to use a production tag of the *roncemer.k3s_ansible
 Remove any non-production copy of the *roncemer.k3s_ansible* collection, and reinstall the configured version:
 ```sh
 rm -rf ~/.ansible/collections/ansible_collections/roncemer/k3s_ansible
-brew install ansible  # (if not already installed)
 ansible-galaxy install -r requirements.yml
 ```
 
