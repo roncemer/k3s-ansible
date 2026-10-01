@@ -10,8 +10,7 @@ Handles edge cases, and has some significant built-in cluster planning logic, su
 * If there are at least 3 nodes in the cluster, the first 3 nodes will be server nodes, and the rest will be agents
 * If there are fewer than 3 nodes in the cluster, the first node will be a server node, and the other node (if it exists) will be an agent node
 * If a node needs to have k3s reinstalled on it (due to a change in k3s version or the node's role), the node will be automatically cordoned, drained, and removed from the cluster, k3s will be uninstalled from the node, the new k3s package (with the correct version) will be installed on the node with the correct role, and the node will be rejoined to the cluster under its new role
-* Automatically installs Helm 4.x on every server node in the cluster
-* Automatically installs the Headlamp dashboard on the cluster
+* Automatically installs Helm, Headlamp, Longhorn block storage, the CNI plugins, and Multus-CNI (each of these can be selectively installed or not installed, based on booleans which can be set from the calling class, or in the inventory)
 
 ## Testing on Virtual Machines in UTM on MacOS
 
