@@ -1,0 +1,146 @@
+---
+argument_specs:
+  main:
+    short_description: "Initialization/setup role for K3s Ansible Galaxy collection"
+    options:
+      k3s_hosts_group:
+        description: |
+          The inventory hosts group name for the nodes in the k3s cluster.
+          Note that if you change this, the provided playbooks will fail, because their hosts attribute is set to match this.
+          Changing this value requires writing your own playbooks, adapted from the provided playbooks, and matching their
+          hosts attribute to the value of this fact.
+        type: str
+      k3s_version:
+        description: 'The version of k3s to install on the nodes'
+        type: str
+      k3s_storage_dir:
+        description: |
+          The directory where k3s will store its data.
+          This is optional.  If not empty, this directory (typically a mounted filesystem)
+          must exist on all nodes where k3s will be installed.  A symlink will be created
+          when k3s is first installed on each node, from the default data directory to this
+          directory.
+        type: str
+      create_k3s_user:
+        description: |
+          Whether to create a special user which can access the kubeconfig file and run kubectl commands on the cluster
+        type: bool
+      k3s_user:
+        description: 'Username for the k3s user'
+        type: str
+      k3s_user_home:
+        description: 'Home directory for the k3s user'
+        type: str
+      k3s_user_id:
+        description: 'UID for the k3s user'
+        type: int
+      k3s_group:
+        description: |
+          Group name for the k3s group.
+          The k3s group is always created on server nodes, because the group ownership of the kubeconfig file
+          (/etc/rancher/k3s/k3s.yaml) is set to this group when k3s is installed in server mode on a node.
+          This allows any user who is a member of the k3s group to access the kubeconfig file, in order to run kubectl
+          commands on the cluster.
+          The k3s group will only be created on server nodes.
+        type: str
+      k3s_group_id:
+        description: 'GID for the k3s group'
+        type: int
+      num_k3s_server_nodes:
+        description: |
+          The number of k3s server nodes.
+          All nodes beyond this number will be configured as agent nodes.
+          This must be an odd number, and must be less than or equal to the number of hosts in the inventory hosts
+          group specified in the k3s_hosts_group fact.
+        type: int
+      install_cni_plugins:
+        description: 'Whether to install CNI plugins on the nodes'
+        type: bool
+      cni_plugins_version:
+        description: 'The version of the CNI plugins to install'
+        type: str
+      install_multus_cni:
+        description: 'Whether to install multus-cni'
+        type: bool
+      multus_cni_version:
+        description: 'The version of multus-cni to install'
+        type: str
+      multus_cni_protocol_version:
+        description: 'The CNI protocol version for multus-cni'
+        type: str
+      install_helm:
+        description: |
+          Whether to install Helm.  Note that Helm is required in order to install a lot of other packages,
+          so if this is set to false, attempts to install any of the packages which require Helm will fail.
+          Helm is only installed on server nodes.
+        type: bool
+      helm_version:
+        description: 'The version of Helm to install'
+        type: str
+      install_headlamp:
+        description: |
+          Whether to install Headlamp.  Headlamp is installed via the Headlamp Helm chart, so if
+          install_headlamp is true and install_helm is false, the play will fail.
+        type: bool
+      headlamp_helm_chart_version:
+        description: 'The Headlamp Helm chart version to install'
+        type: str
+      headlamp_helm_extra_args:
+        description: 'List of extra arguments to pass to Helm when installing the Headlamp Helm chart'
+        type: list
+        elements: str
+      headlamp_ingress_enabled:
+        description: 'Whether to enable the Headlamp ingress'
+        type: bool
+      headlamp_ingress_path:
+        description: 'Headlamp ingress URI path'
+        type: path
+      headlamp_ingress_path_type:
+        description: 'Headlamp ingress path type'
+        type: str
+      headlamp_ingress_middlewares:
+        description: 'List of Headlamp ingress middlwares to be annotated on the Headlamp ingress'
+        type: list
+        elements: str
+      headlamp_ingress_extra_annotations:
+        description: 'Dictionary of extra annotations for the Headlamp ingress'
+        type: dict
+      install_longhorn:
+        description: |
+          Whether to install Longhorn block storage.
+          Longhorn is installed via the Longhorn Helm chart, so if install_longhorn is true and install_helm
+          is false, the play will fail.
+        type: bool
+      longhorn_helm_chart_version:
+        description: 'The Longhorn Helm chart version to install'
+        type: str
+      longhorn_helm_extra_args:
+        description: 'List of extra arguments to pass to Helm when installing the Longhorn Helm chart'
+        type: list
+        elements: str
+      longhorn_default_volume_replica_count:
+        description: 'The default number of replicas for Longhorn volumes'
+        type: int
+      longhorn_ingress_enabled:
+        description: 'Whether to enable the Longhorn ingress'
+        type: bool
+      longhorn_ingress_path:
+        description: 'Longhorn ingress URI path'
+        type: path
+      longhorn_ingress_path_type:
+        description: 'Longhorn ingress path type'
+        type: str
+      longhorn_ingress_middlewares:
+        description: 'List of Longhorn ingress middlwares to be annotated on the Longhorn ingress'
+        type: list
+        elements: str
+      longhorn_ingress_extra_annotations:
+        description: 'Dictionary of extra annotations for the Longhorn ingress'
+        type: dict
+      longhorn_ui_credentials:
+        description: |
+          List of usernames and passwords for accessing the Longhorn UI.
+          Each element in the list must be a dictionary containing a 'username' and 'password' key, each with string values.
+        type: list
+        elements: dict
+        no_log: true

@@ -1,103 +1,49 @@
-# The creation of the k3s user on server nodes is optional.  If created, the user can be sudo'd to in order to
-# run kubectl commands on the cluster.
-# The k3s user will only be created on server nodes.
-create_k3s_user: true
-
-# Username for the k3s user.
-k3s_user: k3s
-# Home directory for the k3s user.
-k3s_user_home: "/home/{{ k3s_user }}"
-# UID for the k3s user.
-k3s_user_id: 2121
-
-# The k3s group is always created on server nodes, because the group ownership of the kubeconfig file (/etc/rancher/k3s/k3s.yaml)
-# is set to this group when k3s is installed in server mode on a node.
-# This allows any user who is a member of the k3s group to access the kubeconfig file, in order to run kubectl
-# commands on the cluster.
-# The k3s group will only be created on server nodes.
-
-# Group name for the k3s group.
-k3s_group: k3s
-# GID for the k3s group.
-k3s_group_id: 2121
-
-# The inventory hosts group name for the nodes in the k3s cluster.
 k3s_hosts_group: "all_hosts"
-
-# The number of k3s server nodes.  All nodes beyond this number will be configured as agent nodes.
-# This must be an odd number, and must be less than or equal to the number of hosts in the inventory
-# hosts group specified in the k3s_hosts_group fact.
-num_k3s_server_nodes: '{{ 3 if (groups[k3s_hosts_group] | length) >= 3 else 1 }}'
-
-# The version of k3s to install on the nodes.
 k3s_version: "v1.37.0+k3s1"
-
-# The directory where k3s will store its data.
-# This is optional.  If not empty, this directory (typically a mounted filesystem)
-# must exist on all nodes where k3s will be installed.  A symlink will be created
-# when k3s is first installed on each node, from the default data directory to this
-#directory.
 k3s_storage_dir: ""
 
-# Whether to install CNI plugins on the nodes, and which version to install.
+create_k3s_user: true
+k3s_user: k3s
+k3s_user_home: "/home/{{ k3s_user }}"
+k3s_user_id: 2121
+
+k3s_group: k3s
+k3s_group_id: 2121
+
+num_k3s_server_nodes: '{{ 3 if (groups[k3s_hosts_group] | length) >= 3 else 1 }}'
+
 install_cni_plugins: false
 cni_plugins_version: "v1.9.1"
 
-# Whether to install multus-cni on the cluster, and the version to install.
-# The CNI protocol version will normally always be 1.0.0, because that is the version to which multus-cni adheres.
-# NOTE: If multus-cni is installed but the CNI plugins are not installed, the multus-cni pods will fail, and
-# prevent any other pods from starting due to not being able to provision their network interfaces.
 install_multus_cni: false
 multus_cni_version: "v4.3.1"
 multus_cni_protocol_version: "1.0.0"
 
-# Whether to install Helm.  Note that Helm is required in order to install a lot of other packages,
-# so if this is set to false, attempts to install any of the packages which require Helm will fail.
 install_helm: true
-# The Helm version to install.
 helm_version: "v4.3.0"
 
-# Whether to install Headlamp.  Headlamp is installed via the Headlamp Helm chart, so if
-# install_headlamp is true and install_helm is false, the Headlamp installation will fail.
 install_headlamp: true
-# The Headlamp Helm chart version to install.
 headlamp_helm_chart_version: "0.45.0"
-# Extra arguments to pass to Helm when installing the Headlamp Helm chart.
 headlamp_helm_extra_args: []
-# Whether to enable the Headlamp ingress.
 headlamp_ingress_enabled: true
-# Headlamp path and path type.
 headlamp_ingress_path: "/headlamp"
 headlamp_ingress_path_type: "Prefix"
-# Headlamp ingress middlwares.
 headlamp_ingress_middlewares:
   - "kube-system-add-trailing-slash-headlamp@kubernetescrd"
-# Extra annotations for the Headlamp ingress.
 headlamp_ingress_extra_annotations: {}
 
-# Whether to install Longhorn block storage on the cluster.
-# Longhorn is installed via the Longhorn Helm chart, so if install_longhorn is true and install_helm
-# is false, the Longhorn installation will fail.
 install_longhorn: true
-# The Longhorn Helm chart version to install.
 longhorn_helm_chart_version: "1.13.0"
-# The default number of replicas for Longhorn volumes.
-longhorn_default_replica_count: '{{ 3 if (groups[k3s_hosts_group] | length) >= 5 else 2 if (groups[k3s_hosts_group] | length) >= 3 else 1 }}'
-# Extra arguments to pass to Helm when installing the Longhorn Helm chart.
 longhorn_helm_extra_args: []
-# Whether to enable the Longhorn ingress.
+longhorn_default_volume_replica_count: '{{ 3 if (groups[k3s_hosts_group] | length) >= 5 else 2 if (groups[k3s_hosts_group] | length) >= 3 else 1 }}'
 longhorn_ingress_enabled: true
-# Longhorn path and path type.
 longhorn_ingress_path: "/longhorn"
 longhorn_ingress_path_type: "Prefix"
-# Longhorn ingress middlwares.
 longhorn_ingress_middlewares:
   - "longhorn-system-basic-auth-longhorn-ui@kubernetescrd"
   - "longhorn-system-add-trailing-slash-longhorn-ui@kubernetescrd"
   - "longhorn-system-strip-prefix-longhorn-ui@kubernetescrd"
-# Extra annotations for the Longhorn ingress.
 longhorn_ingress_extra_annotations: {}
-# Usernames and passwords for accessing the Longhorn UI.
 longhorn_ui_credentials:
   - username: "lhadmin"
     password: "adMiNlH3223"

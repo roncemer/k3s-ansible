@@ -81,7 +81,7 @@ This collection contains the following playbooks:
 
 ## Playbook Defaults
 
-The default values for the roles in the playbook are stored in [roles/init/defaults/main.yml](roles/init/defaults/main.yml).  You can override these values by setting them in the inventory, or, if you are calling roles directly from your own playbooks, by explicitly setting facts or passing vars to the roles which you call.
+The default values for the roles in the playbook are stored in [roles/init/defaults/main.yml](roles/init/defaults/main.yml), and each customizable default is documented in [roles/init/meta/argument_specs.yml](roles/init/meta/argument_specs.yml).  You can override these values by setting them in the inventory, or, if you are calling roles directly from your own playbooks, by explicitly setting facts or passing vars to the roles which you call.
 
 ## Re-using Roles in your own Playbooks
 
