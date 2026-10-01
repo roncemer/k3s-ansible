@@ -1,1 +1,1 @@
-# TODO: Add Longhorn-specific variables here.
+longhorn_helm_chart_url: "https://charts.longhorn.io"

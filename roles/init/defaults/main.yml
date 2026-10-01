@@ -45,6 +45,8 @@ cni_plugins_version: "v1.9.1"
 
 # Whether to install multus-cni on the cluster, and the version to install.
 # The CNI protocol version will normally always be 1.0.0, because that is the version to which multus-cni adheres.
+# NOTE: If multus-cni is installed but the CNI plugins are not installed, the multus-cni pods will fail, and
+# prevent any other pods from starting due to not being able to provision their network interfaces.
 install_multus_cni: true
 multus_cni_version: "v4.3.1"
 multus_cni_protocol_version: "1.0.0"
@@ -75,3 +77,7 @@ longhorn_helm_chart_version: "1.13.0"
 longhorn_helm_extra_args: []
 # Extra annotations for the Longhorn ingress.
 longhorn_ingress_extra_annotations: {}
+# Usernames and passwords for accessing the Longhorn UI.
+longhorn_ui_credentials:
+  - username: "lhadmin"
+    password: "adMiNlH3223"

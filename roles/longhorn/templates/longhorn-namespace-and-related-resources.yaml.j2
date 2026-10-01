@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: longhorn-system
+
+---
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: add-trailing-slash-longhorn-ui
+  namespace: longhorn-system
+spec:
+  redirectRegex:
+    # Matches the exact path and captures any query strings
+    regex: '^(.*)/longhorn$'
+    # Redirects to /longhorn/ preserving the query strings
+    replacement: '${1}/longhorn/'
+    permanent: false
+
+---
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-prefix-longhorn-ui
+  namespace: longhorn-system
+spec:
+  stripPrefix:
+    prefixes:
+      - /longhorn
+
+---
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: basic-auth-longhorn-ui
+  namespace: longhorn-system
+spec:
+  basicAuth:
+    secret: longhorn-dashboard-users
+    removeHeader: true
+
+---
+
+{% set ns = namespace(htpasswd_lines = []) %}
+{% for creds in longhorn_ui_credentials %}
+{% set ns.htpasswd_lines = ns.htpasswd_lines + [ creds.username + ":" + (creds.password | password_hash('bcrypt')) ] %}
+{% endfor %}
+{% set htpasswd_secret_value = ns.htpasswd_lines | join("\n") %}
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: longhorn-dashboard-users
+  namespace: longhorn-system
+type: Opaque
+stringData:
+  auth: {{ htpasswd_secret_value | to_yaml | trim }}

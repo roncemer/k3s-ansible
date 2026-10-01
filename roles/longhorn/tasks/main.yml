@@ -1,1 +1,95 @@
-# TODO: Add Longhorn installation tasks here.
+# - name: "Install required packages for Longhorn"
+#   become: true
+#   ansible.builtin.package:
+#     name:
+#       - apache2-utils
+#     state: present
+#     update_cache: true
+
+- name: "Create a temporary directory for the Longhorn namespace and ingress middleware manifest"
+  run_once: true
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: "longhorn-middleware"
+  register: longhorn_middleware_tempdir
+  changed_when: false
+
+- name: "Template and apply the Longhorn namespace and ingress middleware manifest; remove the temporary directory"
+  run_once: true
+  block:
+
+    - name: "Template the Longhorn namespace and ingress middleware manifest"
+      ansible.builtin.template:
+        src: "longhorn-namespace-and-related-resources.yaml.j2"
+        dest: "{{ longhorn_middleware_tempdir.path }}/longhorn-namespace-and-related-resources.yaml"
+      changed_when: false
+
+    - name: "Apply the Longhorn namespace and ingress middleware manifest"
+      become: true
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+
+          set +e
+          kubectl diff -f {{ longhorn_middleware_tempdir.path | quote }}/longhorn-namespace-and-related-resources.yaml
+          retval="$?"
+          set -e
+
+          if [ "$retval" -ne 0 ]; then
+              kubectl apply -f {{ longhorn_middleware_tempdir.path | quote }}/longhorn-namespace-and-related-resources.yaml
+              exit 99
+          fi
+      args:
+        executable: /bin/bash
+      register: longhorn_ingress_middleware_apply_result
+      changed_when: "longhorn_ingress_middleware_apply_result.rc == 99"
+      failed_when: "longhorn_ingress_middleware_apply_result.rc not in [0, 99]"
+
+  always:
+    - name: "Remove the temporary directory for the Longhorn namespace and ingress middleware manifest"
+      ansible.builtin.file:
+        path: "{{ longhorn_middleware_tempdir.path }}"
+        state: absent
+      changed_when: false
+
+# TODO: Find a way to check whether Longhorn is already installed, and the correct version and configuration, before attempting installation.
+- name: "Install Longhorn via the Longhorn Helm chart"
+  run_once: true
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+
+      helm repo add longhorn "{{ longhorn_helm_chart_url }}" || true
+      helm repo update
+
+      var_args=()
+      {% if k3s_storage_dir != "" %}
+      var_args+=(--set {{ ("defaultSettings.defaultDataPath=" + k3s_storage_dir + "/longhorn") | quote }})
+      var_args+=(--set {{ ("defaultSettings.logPath=" + k3s_storage_dir + "/longhorn/logs") | quote }})
+      {% endif %}
+
+      {% for arg in longhorn_helm_extra_args %}
+      var_args+=({{ arg | quote }})
+      {% endfor %}
+
+      helm upgrade --install longhorn longhorn/longhorn \
+          --namespace longhorn-system \
+          --version "{{ longhorn_helm_chart_version }}" \
+          --set defaultSettings.defaultDataLocality=best-effort \
+          --set persistence.defaultClass=false \
+          --set persistence.defaultClassReplicaCount={{ longhorn_replica_counnt | quote}} \
+          --set defaultSettings.defaultReplicaCount={{ longhorn_replica_counnt | quote}} \
+          --set persistence.migratable=true \
+          --set ingress.enabled=true \
+          --set ingressClassName=traefik \
+          --set ingress.host="" \
+          --set ingress.path=/longhorn \
+          --set ingress.pathType=Prefix \
+          --set-json ingress.annotations={{ longhorn_ingress_annotations | to_json | quote }} \
+          "${var_args[@]}"
+  args:
+    executable: /bin/bash
+  vars:
+    longhorn_replica_counnt: '{{ 3 if (groups[k3s_hosts_group] | length) >= 5 else 2 if (groups[k3s_hosts_group] | length) >= 3 else 1 }}'
+    longhorn_ingress_annotations: '{{ {"traefik.ingress.kubernetes.io/router.middlewares": "longhorn-system-basic-auth-longhorn-ui@kubernetescrd,longhorn-system-add-trailing-slash-longhorn-ui@kubernetescrd,longhorn-system-strip-prefix-longhorn-ui@kubernetescrd"} | combine(longhorn_ingress_extra_annotations) }}'
