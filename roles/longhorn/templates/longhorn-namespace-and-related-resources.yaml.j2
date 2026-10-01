@@ -5,6 +5,8 @@ metadata:
 
 ---
 
+{% if longhorn_ingress_enabled %}
+
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -13,9 +15,9 @@ metadata:
 spec:
   redirectRegex:
     # Matches the exact path and captures any query strings
-    regex: '^(.*)/longhorn$'
-    # Redirects to /longhorn/ preserving the query strings
-    replacement: '${1}/longhorn/'
+    regex: {{ ('^(.*)' + longhorn_ingress_path + '$') | to_yaml | trim }}
+    # Redirects to longhorn_ingress_path plus a trailing slash, preserving the query strings
+    replacement: {{ ('${1}' + longhorn_ingress_path + '/') | to_yaml | trim }}
     permanent: false
 
 ---
@@ -28,7 +30,7 @@ metadata:
 spec:
   stripPrefix:
     prefixes:
-      - /longhorn
+      - {{ longhorn_ingress_path | to_yaml | trim }}
 
 ---
 
@@ -58,3 +60,5 @@ metadata:
 type: Opaque
 stringData:
   auth: {{ htpasswd_secret_value | to_yaml | trim }}
+
+{% endif %} {# longhorn_ingress_enabled #}

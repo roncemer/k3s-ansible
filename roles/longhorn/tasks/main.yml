@@ -78,18 +78,20 @@
           --version "{{ longhorn_helm_chart_version }}" \
           --set defaultSettings.defaultDataLocality=best-effort \
           --set persistence.defaultClass=false \
-          --set persistence.defaultClassReplicaCount={{ longhorn_replica_counnt | quote}} \
-          --set defaultSettings.defaultReplicaCount={{ longhorn_replica_counnt | quote}} \
+          --set persistence.defaultClassReplicaCount={{ longhorn_default_replica_count | quote }} \
+          --set defaultSettings.defaultReplicaCount={{ longhorn_default_replica_count | quote }} \
           --set persistence.migratable=true \
-          --set ingress.enabled=true \
+          --set ingress.enabled={{ "true" if longhorn_ingress_enabled else "false" }} \
+      {% if longhorn_ingress_enabled %}
           --set ingressClassName=traefik \
           --set ingress.host="" \
-          --set ingress.path=/longhorn \
-          --set ingress.pathType=Prefix \
+          --set ingress.path={{ longhorn_ingress_path | quote }} \
+          --set ingress.pathType={{ longhorn_ingress_path_type | quote }} \
           --set-json ingress.annotations={{ longhorn_ingress_annotations | to_json | quote }} \
+      {% endif %}
           "${var_args[@]}"
   args:
     executable: /bin/bash
   vars:
-    longhorn_replica_counnt: '{{ 3 if (groups[k3s_hosts_group] | length) >= 5 else 2 if (groups[k3s_hosts_group] | length) >= 3 else 1 }}'
-    longhorn_ingress_annotations: '{{ {"traefik.ingress.kubernetes.io/router.middlewares": "longhorn-system-basic-auth-longhorn-ui@kubernetescrd,longhorn-system-add-trailing-slash-longhorn-ui@kubernetescrd,longhorn-system-strip-prefix-longhorn-ui@kubernetescrd"} | combine(longhorn_ingress_extra_annotations) }}'
+    longhorn_ingress_annotations: >-
+      {{ { "traefik.ingress.kubernetes.io/router.middlewares": (longhorn_ingress_middlewares | join(",")) } | combine(longhorn_ingress_extra_annotations) }}

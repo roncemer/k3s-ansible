@@ -6,7 +6,7 @@ metadata:
 spec:
   redirectRegex:
     # Matches the exact path and captures any query strings
-    regex: '^(.*)/headlamp$'
-    # Redirects to /headlamp/ preserving the query strings
-    replacement: '${1}/headlamp/'
+    regex: {{ ('^(.*)' + headlamp_ingress_path + '$') | to_yaml | trim }}
+    # Redirects to headlamp_ingress_path plus a trailing slash, preserving the query strings
+    replacement: {{ ('${1}' + headlamp_ingress_path + '/') | to_yaml | trim }}
     permanent: false

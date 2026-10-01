@@ -64,6 +64,14 @@ install_headlamp: true
 headlamp_helm_chart_version: "0.45.0"
 # Extra arguments to pass to Helm when installing the Headlamp Helm chart.
 headlamp_helm_extra_args: []
+# Whether to enable the Headlamp ingress.
+headlamp_ingress_enabled: true
+# Headlamp path and path type.
+headlamp_ingress_path: "/headlamp"
+headlamp_ingress_path_type: "Prefix"
+# Headlamp ingress middlwares.
+headlamp_ingress_middlewares:
+  - "kube-system-add-trailing-slash-headlamp@kubernetescrd"
 # Extra annotations for the Headlamp ingress.
 headlamp_ingress_extra_annotations: {}
 
@@ -73,8 +81,20 @@ headlamp_ingress_extra_annotations: {}
 install_longhorn: true
 # The Longhorn Helm chart version to install.
 longhorn_helm_chart_version: "1.13.0"
+# The default number of replicas for Longhorn volumes.
+longhorn_default_replica_count: '{{ 3 if (groups[k3s_hosts_group] | length) >= 5 else 2 if (groups[k3s_hosts_group] | length) >= 3 else 1 }}'
 # Extra arguments to pass to Helm when installing the Longhorn Helm chart.
 longhorn_helm_extra_args: []
+# Whether to enable the Longhorn ingress.
+longhorn_ingress_enabled: true
+# Longhorn path and path type.
+longhorn_ingress_path: "/longhorn"
+longhorn_ingress_path_type: "Prefix"
+# Longhorn ingress middlwares.
+longhorn_ingress_middlewares:
+  - "longhorn-system-basic-auth-longhorn-ui@kubernetescrd"
+  - "longhorn-system-add-trailing-slash-longhorn-ui@kubernetescrd"
+  - "longhorn-system-strip-prefix-longhorn-ui@kubernetescrd"
 # Extra annotations for the Longhorn ingress.
 longhorn_ingress_extra_annotations: {}
 # Usernames and passwords for accessing the Longhorn UI.
