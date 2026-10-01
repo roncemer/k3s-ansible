@@ -5,50 +5,53 @@
 
 - name: "Set the k3s API host, IPV4 address and token for joining this host to the cluster, to empty strings"
   ansible.builtin.set_fact:
-    k3s_api_host: ""
-    k3s_api_host_ipv4: ""
-    k3s_api_host_token: ""
+    k3s_cluster_k3s_api_host: ""
+    k3s_cluster_k3s_api_host_ipv4: ""
+    k3s_cluster_k3s_api_host_token: ""
 
 - name: "Set the k3s API host and IPV4 address for joining this host to the cluster, to the first host which is running k3s server, excluding the current host"
   ansible.builtin.set_fact:
-    k3s_api_host: "{{ item }}"
-    k3s_api_host_ipv4: "{{ hostvars[item].ansible_facts.default_ipv4.address }}"
+    k3s_cluster_k3s_api_host: "{{ item }}"
+    k3s_cluster_k3s_api_host_ipv4: "{{ hostvars[item].ansible_facts.default_ipv4.address }}"
   when:
-    - k3s_api_host == ""
+    - k3s_cluster_k3s_api_host == ""
     - item != k3s_install_host
-    - 'hostvars[item]["k3s_installed_info"].is_installed'
-    - 'hostvars[item]["k3s_installed_info"].role == "server"'
+    - 'hostvars[item]["k3s_cluster_k3s_installed_info"].is_installed'
+    - 'hostvars[item]["k3s_cluster_k3s_installed_info"].role == "server"'
   loop: "{{ groups[k3s_hosts_group] }}"
 
-- name: "Slurp the server token for the k3s API host; set the k3s_api_host_token fact"
-  when: 'k3s_api_host != ""'
+- name: "Get the server token for the k3s API host; set the k3s_cluster_k3s_api_host_token fact"
+  when: 'k3s_cluster_k3s_api_host != ""'
   block:
-    - name: "Slurp the server token for the k3s API host"
+    - name: "Get the server token for the k3s API host"
       become: true
       ansible.builtin.slurp:
         src: "/var/lib/rancher/k3s/server/token"
       # We have to default this to a non-empty host in order to avoid getting an error about an empty delegate_to value,
       # even though the "when" condition would prevent this task from running in that case.
-      delegate_to: "{{ k3s_api_host | default(k3s_install_host, true) }}"
-      register: k3s_api_host_token_file_encoded
+      delegate_to: "{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}"
+      register: k3s_cluster_k3s_api_host_token_file_encoded
 
     - name: "Decode the server token for the k3s API host into the current host"
       ansible.builtin.set_fact:
-        k3s_api_host_token: "{{ k3s_api_host_token_file_encoded['content'] | b64decode | trim }}"
+        k3s_cluster_k3s_api_host_token: "{{ k3s_cluster_k3s_api_host_token_file_encoded['content'] | b64decode | trim }}"
 
 - name: "Show the k3s API host and token for joining this host to the cluster"
   ansible.builtin.debug:
-    msg: "k3s_api_host: {{ k3s_api_host }}  k3s_api_host_ipv4: {{ k3s_api_host_ipv4 }}  k3s_api_host_token: {{ k3s_api_host_token | regex_replace('.', '*') }}"
+    msg:
+      - 'k3s_cluster_k3s_api_host: {{ k3s_cluster_k3s_api_host }}'
+      - 'k3s_cluster_k3s_api_host_ipv4: {{ k3s_cluster_k3s_api_host_ipv4 }}'
+      - 'k3s_cluster_k3s_api_host_token: {{ k3s_cluster_k3s_api_host_token | regex_replace(".", "*") }}'
 
 #################################################################################
 # CORDON, DRAIN AND DELETE THE NODE FROM THE CLUSTER, UNINSTALL K3S, IF NEEDED. #
 #################################################################################
 
-- name: "Cordon, drain and delete my node: {{ k3s_install_host }}, executing the commands on {{ k3s_api_host }}"
-  when: 'k3s_installed_info.is_installed and k3s_installed_info.need_install_or_reinstall and k3s_api_host != ""'
+- name: "Cordon, drain and delete my node: {{ k3s_install_host }}, executing the commands on {{ k3s_cluster_k3s_api_host }}"
+  when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall and k3s_cluster_k3s_api_host != ""'
   # We have to default this to a non-empty host in order to avoid getting an error about an empty delegate_to value,
   # even though the "when" condition would prevent this task from running in that case.
-  delegate_to: '{{ k3s_api_host | default(k3s_install_host, true) }}'
+  delegate_to: '{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}'
   become: true
   ansible.builtin.shell:
     cmd: |
@@ -59,29 +62,31 @@
       kubectl delete node {{ k3s_install_host.split('.')[0] }}
   args:
     executable: /bin/bash
+  changed_when: true
 
 - name: "Uninstall k3s on my node: {{ k3s_install_host }}"
-  when: 'k3s_installed_info.is_installed and k3s_installed_info.need_install_or_reinstall'
+  when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall'
   become: true
   ansible.builtin.shell:
     cmd: |
       set -euo pipefail
 
-      {% if k3s_installed_info.role == "server" %}
+      {% if k3s_cluster_k3s_installed_info.role == "server" %}
       /usr/local/bin/k3s-uninstall.sh
-      {% elif k3s_installed_info.role == "agent" %}
+      {% elif k3s_cluster_k3s_installed_info.role == "agent" %}
       /usr/local/bin/k3s-agent-uninstall.sh
       {% endif %}
   args:
     executable: /bin/bash
+  changed_when: true
 
 ##############################################################################
 # INSTALL K3S ON THE NODE; JOIN THE CLUSTER IF WE HAVE ANOTHER RUNNING NODE. #
 ##############################################################################
 
 - name: "If this node is listed in the cluster's node list, delete it from the cluster"
-  when: 'k3s_api_host != ""'
-  delegate_to: '{{ k3s_api_host | default(k3s_install_host, true) }}'
+  when: 'k3s_cluster_k3s_api_host != ""'
+  delegate_to: '{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}'
   become: true
   ansible.builtin.shell:
     cmd: |
@@ -90,23 +95,23 @@
       kubectl delete node {{ k3s_install_host.split('.')[0] | quote }}
   args:
     executable: /bin/bash
-  register: result_delete_my_node
+  register: k3s_cluster_result_delete_my_node
   failed_when: false
-  changed_when: 'result_delete_my_node.rc == 0'
+  changed_when: 'k3s_cluster_result_delete_my_node.rc == 0'
 
 - name: "Install k3s {{ my_k3s_node_role }} on my node: {{ k3s_install_host }}"
-  when: 'k3s_installed_info.need_install_or_reinstall'
+  when: 'k3s_cluster_k3s_installed_info.need_install_or_reinstall'
   become: true
   ansible.builtin.shell:
     cmd: |
       set -euo pipefail
 
-      curl -sfL {{ k3s_installer_script_url | quote }} | \
+      curl -sfL {{ k3s_cluster_k3s_installer_script_url | quote }} | \
           INSTALL_K3S_VERSION={{ k3s_version | quote }} \
           INSTALL_K3S_EXEC="{{ install_k3s_exec_args | join(' ') }}" \
-      {% if k3s_api_host_ipv4 != "" and k3s_api_host_token != "" %}
-          K3S_URL={{ ("https://" + k3s_api_host_ipv4 + ":6443") | quote }} \
-          K3S_TOKEN={{ k3s_api_host_token | quote }} \
+      {% if k3s_cluster_k3s_api_host_ipv4 != "" and k3s_cluster_k3s_api_host_token != "" %}
+          K3S_URL={{ ("https://" + k3s_cluster_k3s_api_host_ipv4 + ":6443") | quote }} \
+          K3S_TOKEN={{ k3s_cluster_k3s_api_host_token | quote }} \
       {% endif %}
       {% if my_k3s_node_role == "server" %}
           K3S_KUBECONFIG_MODE="640" \
@@ -120,13 +125,14 @@
       {{
         [
           "server --secrets-encryption --flannel-backend=wireguard-native" if my_k3s_node_role == "server" else "",
-          "--cluster-init" if my_k3s_node_role == "server" and k3s_api_host_ipv4 == "" else ""
+          "--cluster-init" if my_k3s_node_role == "server" and k3s_cluster_k3s_api_host_ipv4 == "" else ""
         ] | reject('==', '') | list
       }}
+  changed_when: true
 
 - name: "Update the composite fact detailing the status of the k3s installation on the host"
   ansible.builtin.set_fact:
-    k3s_installed_info:
+    k3s_cluster_k3s_installed_info:
       is_installed: true
       version: '{{ k3s_version }}'
       role: '{{ my_k3s_node_role }}'
@@ -165,26 +171,57 @@
 - name: "Create the ~/.kube directory for the superuser"
   when: 'my_k3s_node_role == "server"'
   become: true
-  ansible.builtin.shell:
-    cmd: |
-      set -euo pipefail
+  block:
+    - name: "Get the superuser's username"
+      ansible.builtin.command: 'id -un'
+      register: k3s_cluster_result_get_superuser_username
+      changed_when: false
 
-      mkdir -p "$HOME/.kube"
-      chmod 0750 "$HOME/.kube"
-      ln -sf /etc/rancher/k3s/k3s.yaml "$HOME/.kube/config"
-  args:
-    executable: /bin/bash
+    - name: "Get the superuser's group name"
+      ansible.builtin.command: 'id -gn'
+      register: k3s_cluster_result_get_superuser_group_name
+      changed_when: false
+
+    - name: "Get the superuser's home directory"
+      ansible.builtin.command: 'echo "$HOME"'
+      register: k3s_cluster_result_get_superuser_home
+      changed_when: false
+
+    - name: "Make the superuser's .kube directory"
+      ansible.builtin.file:
+        path: '{{ k3s_cluster_result_get_superuser_home.stdout | trim }}/.kube'
+        state: directory
+        owner: '{{ k3s_cluster_result_get_superuser_username.stdout | trim }}'
+        group: '{{ k3s_cluster_result_get_superuser_group_name.stdout | trim }}'
+        mode: '0750'
+
+    - name: "Link /etc/rancher/k3s/k3s.yaml to the superuser's .kube/config"
+      ansible.builtin.file:
+        src: '/etc/rancher/k3s/k3s.yaml'
+        path: '{{ k3s_cluster_result_get_superuser_home.stdout | trim }}/.kube/config'
+        state: link
+        owner: '{{ k3s_cluster_result_get_superuser_username.stdout | trim }}'
+        group: '{{ k3s_cluster_result_get_superuser_group_name.stdout | trim }}'
+        force: true
 
 - name: "Create the ~/.kube directory for the {{ k3s_user }} user, if we created the user"
   when: 'create_k3s_user and my_k3s_node_role == "server"'
   become: true
   become_user: "{{ k3s_user }}"
-  ansible.builtin.shell:
-    cmd: |
-      set -euo pipefail
+  block:
+    - name: "Make the {{ k3s_user }} user's .kube directory"
+      ansible.builtin.file:
+        path: '{{ k3s_user }}/.kube'
+        state: directory
+        owner: '{{ k3s_user | trim }}'
+        group: '{{ k3s_group | trim }}'
+        mode: '0750'
 
-      mkdir -p "$HOME/.kube"
-      chmod 0750 "$HOME/.kube"
-      ln -sf /etc/rancher/k3s/k3s.yaml "$HOME/.kube/config"
-  args:
-    executable: /bin/bash
+    - name: "Link /etc/rancher/k3s/k3s.yaml to the {{ k3s_user }} user's .kube/config"
+      ansible.builtin.file:
+        src: '/etc/rancher/k3s/k3s.yaml'
+        path: '{{ k3s_user }}/.kube/config'
+        state: link
+        owner: '{{ k3s_user | trim }}'
+        group: '{{ k3s_group | trim }}'
+        force: true

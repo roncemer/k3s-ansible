@@ -2,5 +2,5 @@
   hosts: all_hosts
 
   roles:
-    - name: alive-check
-      tags: [alive-check]
+    - role: alive_check
+      tags: [alive_check]

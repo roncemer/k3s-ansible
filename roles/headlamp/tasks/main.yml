@@ -14,6 +14,7 @@
       ansible.builtin.template:
         src: "headlamp-ingress-middleware.yaml.j2"
         dest: "{{ headlamp_middleware_tempdir.path }}/headlamp-ingress-middleware.yaml"
+        mode: '0644'
       changed_when: false
 
     - name: "Apply the Headlamp ingress middleware manifest"
@@ -78,5 +79,9 @@
   args:
     executable: /bin/bash
   vars:
-    headlamp_ingress_annotations: >-
-      {{ { "traefik.ingress.kubernetes.io/router.middlewares": (headlamp_ingress_middlewares | join(",")) } | combine(headlamp_ingress_extra_annotations) }}
+    headlamp_ingress_annotations: |
+      {{
+          { "traefik.ingress.kubernetes.io/router.middlewares": (headlamp_ingress_middlewares | join(",")) }
+          | combine(headlamp_ingress_extra_annotations)
+      }}
+  changed_when: true

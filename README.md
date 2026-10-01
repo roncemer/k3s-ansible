@@ -99,3 +99,15 @@ The default values for the roles in the playbook are stored in [roles/init/defau
 ## Re-using Roles in your own Playbooks
 
 If you need to write your own playbooks, as opposed to just using the playbooks which are provided in this collection, you can simply make a local copy of any of the above-referenced playbooks in your own project, and do your customizations.
+
+## Developing this Project
+
+Install `ansible-lint` on MacOS:
+```sh
+brew install ansible-lint
+```
+
+Validate playbooks and roles for lint errors:
+```sh
+./validate-lint
+```

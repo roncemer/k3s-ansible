@@ -7,8 +7,9 @@
         echo "Group with become enabled:    $(id -gn)"
   args:
     executable: /bin/bash
-  register: result_get_my_id
+  register: alive_check_result_get_my_id
+  changed_when: false
 
 - name: "Show the output of the Alive-Check commands"
   ansible.builtin.debug:
-    var: result_get_my_id.stdout_lines
+    var: alive_check_result_get_my_id.stdout_lines

@@ -8,10 +8,10 @@
       kubectl -n kube-system create token headlamp-admin --duration=12h
   args:
     executable: /bin/bash
-  register: result_headlamp_token
+  register: headlamp_token_result_headlamp_token
   changed_when: false
 
 - name: "Display the Headlamp token"
   run_once: true
   ansible.builtin.debug:
-    msg: "Headlamp token: {{ result_headlamp_token.stdout }} "
+    msg: "Headlamp token: {{ headlamp_token_result_headlamp_token.stdout }} "

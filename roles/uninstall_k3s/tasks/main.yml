@@ -3,7 +3,8 @@
   block:
     - name: "Get the home directory of the become user (superuser)"
       ansible.builtin.command: "echo $HOME"
-      register: result_get_superuser_home
+      register: uninstall_k3s_result_get_superuser_home
+      changed_when: false
 
     - name: "Uninstall k3s server or agent, if installed"
       ansible.builtin.shell:
@@ -21,13 +22,13 @@
           fi
       args:
         executable: /bin/bash
-      register: result_k3s_server_agent_uninstall
-      changed_when: 'result_k3s_server_agent_uninstall.rc == 99'
-      failed_when: 'result_k3s_server_agent_uninstall.rc not in [0, 99]'
+      register: uninstall_k3s_result_k3s_server_agent_uninstall
+      changed_when: 'uninstall_k3s_result_k3s_server_agent_uninstall.rc == 99'
+      failed_when: 'uninstall_k3s_result_k3s_server_agent_uninstall.rc not in [0, 99]'
 
-    - name: "Set k3s_dirs_and_files_to_remove fact"
+    - name: "Set uninstall_k3s_dirs_and_files_to_remove fact"
       ansible.builtin.set_fact:
-        k3s_dirs_and_files_to_remove:
+        uninstall_k3s_dirs_and_files_to_remove:
           - /etc/rancher/k3s
           - /etc/rancher/node
           - /var/lib/rancher/k3s
@@ -38,14 +39,14 @@
           - /opt/cni
           - /etc/cni
           - /dev/longhorn
-          - '{{ result_get_superuser_home.stdout | trim }}/.kube'
+          - '{{ uninstall_k3s_result_get_superuser_home.stdout | trim }}/.kube'
 
-    - name: "Append directories under {{ k3s_storage_dir }} to k3s_dirs_and_files_to_remove fact"
+    - name: "Append directories under {{ k3s_storage_dir }} to uninstall_k3s_dirs_and_files_to_remove fact"
       when: 'k3s_storage_dir != ""'
       ansible.builtin.set_fact:
-        k3s_dirs_and_files_to_remove: |
+        uninstall_k3s_dirs_and_files_to_remove: |
           {{
-              k3s_dirs_and_files_to_remove + [
+              uninstall_k3s_dirs_and_files_to_remove + [
                   k3s_storage_dir + "/k3s",
                   k3s_storage_dir + "/longhorn",
               ]
@@ -55,7 +56,7 @@
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      loop: '{{ k3s_dirs_and_files_to_remove }}'
+      loop: '{{ uninstall_k3s_dirs_and_files_to_remove }}'
 
     - name: "Remove the {{ k3s_user_home }}.kube directory"
       when: create_k3s_user
@@ -73,9 +74,9 @@
           exit 0
       args:
         executable: /bin/bash
-      register: result_rmdir
-      changed_when: 'result_rmdir.rc == 99'
-      failed_when: 'result_rmdir.rc not in [0, 99]'
+      register: uninstall_k3s_result_rmdir
+      changed_when: 'uninstall_k3s_result_rmdir.rc == 99'
+      failed_when: 'uninstall_k3s_result_rmdir.rc not in [0, 99]'
       loop:
         - /etc/rancher
         - /var/lib/rancher

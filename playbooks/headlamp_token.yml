@@ -2,7 +2,7 @@
   hosts: all_hosts
 
   roles:
-    - name: init
+    - role: init
       tags: [always]
-    - name: headlamp_token
+    - role: headlamp_token
       tags: [headlamp, headlamp_token]

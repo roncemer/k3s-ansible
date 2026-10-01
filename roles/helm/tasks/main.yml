@@ -35,15 +35,14 @@
           ansible.builtin.get_url:
             url: "{{ helm_download_url }}"
             dest: '{{ helm_download_tempdir.path }}/{{ helm_download_filename }}'
-          register: download_result
+            mode: '0644'
           changed_when: false
 
         - name: "Extract the Helm tarball"
           ansible.builtin.unarchive:
             src: '{{ helm_download_tempdir.path }}/{{ helm_download_filename }}'
             dest: '{{ helm_download_tempdir.path }}'
-            remote_src: yes
-          register: extract_result
+            remote_src: true
           changed_when: false
 
         - name: "Move the helm executable into place"
@@ -55,6 +54,7 @@
               mv -f {{ (helm_download_tempdir.path + "/linux-" + helm_arch + "/helm") | quote }} /usr/local/bin/helm
           args:
             executable: /bin/bash
+          changed_when: true
 
       always:
         - name: "Remove the temporary directory for the Helm download"

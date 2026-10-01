@@ -2,5 +2,5 @@
   hosts: all_hosts
 
   roles:
-    - name: shutdown
+    - role: shutdown
       tags: [shutdown]

@@ -1,2 +1,3 @@
+.ansible
 *.swp
 examples/inventories/k3s-test-cluster/ansible-become-password.txt

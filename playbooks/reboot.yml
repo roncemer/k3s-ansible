@@ -2,5 +2,5 @@
   hosts: all_hosts
 
   roles:
-    - name: reboot
+    - role: reboot
       tags: [reboot]

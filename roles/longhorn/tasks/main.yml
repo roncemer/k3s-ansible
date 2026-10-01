@@ -22,6 +22,7 @@
       ansible.builtin.template:
         src: "longhorn-namespace-and-related-resources.yaml.j2"
         dest: "{{ longhorn_middleware_tempdir.path }}/longhorn-namespace-and-related-resources.yaml"
+        mode: '0644'
       changed_when: false
 
     - name: "Apply the Longhorn namespace and ingress middleware manifest"
@@ -93,5 +94,9 @@
   args:
     executable: /bin/bash
   vars:
-    longhorn_ingress_annotations: >-
-      {{ { "traefik.ingress.kubernetes.io/router.middlewares": (longhorn_ingress_middlewares | join(",")) } | combine(longhorn_ingress_extra_annotations) }}
+    longhorn_ingress_annotations: |
+      {{
+          { "traefik.ingress.kubernetes.io/router.middlewares": (longhorn_ingress_middlewares | join(",")) }
+          | combine(longhorn_ingress_extra_annotations)
+      }}
+  changed_when: true

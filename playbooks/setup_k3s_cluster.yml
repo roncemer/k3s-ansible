@@ -2,27 +2,27 @@
   hosts: all_hosts
 
   roles:
-    - name: init
+    - role: init
       tags: [always]
-    - name: prereq
+    - role: prereq
       tags: [k3s, prereq]
-    - name: k3s_cluster
+    - role: k3s_cluster
       tags: [k3s, k3s_cluster]
-    - name: helm
+    - role: helm
       tags: [helm]
       when: install_helm
-    - name: cni_plugins
+    - role: cni_plugins
       tags: [cni_plugins]
       when: install_cni_plugins
-    - name: multus_cni
+    - role: multus_cni
       tags: [multus_cni]
       when: install_multus_cni
-    - name: longhorn
+    - role: longhorn
       tags: [longhorn]
       when: install_longhorn
-    - name: headlamp
+    - role: headlamp
       tags: [headlamp]
       when: install_headlamp
-    - name: headlamp_token
+    - role: headlamp_token
       tags: [headlamp, headlamp_token]
       when: install_headlamp
