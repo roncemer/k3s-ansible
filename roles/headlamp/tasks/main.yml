@@ -76,4 +76,4 @@
   args:
     executable: /bin/bash
   vars:
-    headlamp_ingress_annotations: '{{ {"traefik.ingress.kubernetes.io/router.middlewares": "kube-system-add-trailing-slash@kubernetescrd"} | combine(headlamp_ingress_extra_annotations) }}'
+    headlamp_ingress_annotations: '{{ {"traefik.ingress.kubernetes.io/router.middlewares": "kube-system-add-trailing-slash-headlamp@kubernetescrd"} | combine(headlamp_ingress_extra_annotations) }}'
