@@ -40,14 +40,14 @@ k3s_version: "v1.37.0+k3s1"
 k3s_storage_dir: ""
 
 # Whether to install CNI plugins on the nodes, and which version to install.
-install_cni_plugins: true
+install_cni_plugins: false
 cni_plugins_version: "v1.9.1"
 
 # Whether to install multus-cni on the cluster, and the version to install.
 # The CNI protocol version will normally always be 1.0.0, because that is the version to which multus-cni adheres.
 # NOTE: If multus-cni is installed but the CNI plugins are not installed, the multus-cni pods will fail, and
 # prevent any other pods from starting due to not being able to provision their network interfaces.
-install_multus_cni: true
+install_multus_cni: false
 multus_cni_version: "v4.3.1"
 multus_cni_protocol_version: "1.0.0"
 
