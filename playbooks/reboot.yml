@@ -1,0 +1,6 @@
+- name: "Reboot the hosts"
+  hosts: all_hosts
+
+  roles:
+    - name: reboot
+      tags: [reboot]

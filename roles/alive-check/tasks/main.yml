@@ -1,0 +1,14 @@
+- name: "Execute the Alive-Check commands"
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+        echo "I'm alive!"
+        echo "Username with become enabled: $(id -un)"
+        echo "Group with become enabled:    $(id -gn)"
+  args:
+    executable: /bin/bash
+  register: result_get_my_id
+
+- name: "Show the output of the Alive-Check commands"
+  ansible.builtin.debug:
+    var: result_get_my_id.stdout_lines

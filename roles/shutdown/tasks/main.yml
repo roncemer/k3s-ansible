@@ -1,0 +1,3 @@
+- name: "Shut down the nodes"
+  become: true
+  community.general.shutdown:

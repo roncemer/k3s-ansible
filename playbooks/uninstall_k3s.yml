@@ -1,4 +1,4 @@
-- name: "Set up a K3s cluster"
+- name: "Uninstall K3s on the hosts"
   hosts: all_hosts
 
   roles:

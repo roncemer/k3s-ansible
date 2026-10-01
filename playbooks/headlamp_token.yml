@@ -1,4 +1,4 @@
-- name: "Set up a K3s cluster"
+- name: "Create a Headlamp token"
   hosts: all_hosts
 
   roles:

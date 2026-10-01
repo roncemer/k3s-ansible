@@ -1,0 +1,6 @@
+- name: "Shut down the hosts"
+  hosts: all_hosts
+
+  roles:
+    - name: shutdown
+      tags: [shutdown]

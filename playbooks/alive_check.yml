@@ -1,0 +1,6 @@
+- name: "Alive Check"
+  hosts: all_hosts
+
+  roles:
+    - name: alive-check
+      tags: [alive-check]
