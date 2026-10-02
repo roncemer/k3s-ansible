@@ -104,6 +104,33 @@
       until: k3s_cluster_result_wait_for_k3s_api.rc == 0
       changed_when: false
 
+#######################################################
+# DO ANY REQUIRED SETUP FOR THE K3S STORAGE DIRECTORY #
+#######################################################
+
+- name: "Create a directory for k3s storage, and symlink it into place."
+  when: 'k3s_storage_dir != ""'
+  become: true
+  block:
+    - name: "Create the {{ k3s_storage_dir }}/k3s directory"
+      ansible.builtin.file:
+        path: "{{ k3s_storage_dir }}/k3s"
+        state: directory
+        mode: '0755'
+
+    - name: "Create the {{ k3s_storage_dir }}/k3s/storage directory"
+      ansible.builtin.file:
+        path: "{{ k3s_storage_dir }}/k3s/storage"
+        state: directory
+        mode: '0701'
+
+    - name: "Create a symlink pointing /var/lib/rancher/k3s/storage to {{ k3s_storage_dir }}/k3s/storage"
+      ansible.builtin.file:
+        src: "{{ k3s_storage_dir }}/k3s/storage"
+        dest: "/var/lib/rancher/k3s/storage"
+        state: link
+        force: true
+
 ########################################################
 # FIX THE PERMISSIONS AND GROUP OF THE KUBECONFIG FILE #
 #######################################################
