@@ -39,6 +39,7 @@
           - /opt/cni
           - /etc/cni
           - /dev/longhorn
+          - /var/lib/longhorn
           - '{{ uninstall_k3s_result_get_superuser_home.stdout | trim }}/.kube'
 
     - name: "Append directories under {{ k3s_storage_dir }} to uninstall_k3s_dirs_and_files_to_remove fact"
