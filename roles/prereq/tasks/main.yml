@@ -39,8 +39,8 @@
     name: '{{ k3s_user }}'
     uid: '{{ k3s_user_id }}'
     group: '{{ k3s_group }}'
-    shell: /bin/bash
+    shell: '/bin/bash'
     system: true
-    home: "{{ k3s_user_home }}"
+    home: '{{ k3s_user_home }}'
     create_home: true
     state: present

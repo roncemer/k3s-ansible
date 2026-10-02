@@ -14,3 +14,22 @@
   run_once: true
   ansible.builtin.assert:
     that: install_helm
+
+- name: "Get the username, group name, and home directory of the superuser"
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+
+      id -un
+      id -gn
+      echo $HOME
+  args:
+    executable: /bin/bash
+  register: init_result_superuser_info
+
+- name: "Set superuser information as facts"
+  ansible.builtin.set_fact:
+    superuser_name: '{{ init_result_superuser_info.stdout_lines[0] | trim }}'
+    superuser_group: '{{ init_result_superuser_info.stdout_lines[1] | trim }}'
+    superuser_home: '{{ init_result_superuser_info.stdout_lines[2] | trim }}'

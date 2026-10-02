@@ -1,5 +1,7 @@
 k3s_hosts_group: "all_hosts"
 k3s_version: "v1.37.0+k3s1"
+k3s_cluster_pod_network_cidr: "10.100.0.0/16"
+k3s_enable_wireguard_network_encryption: true
 k3s_storage_dir: ""
 
 create_k3s_user: true

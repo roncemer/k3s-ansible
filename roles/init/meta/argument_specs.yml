@@ -21,6 +21,12 @@ argument_specs:
       k3s_version:
         description: 'The version of k3s to install on the nodes'
         type: str
+      k3s_cluster_pod_network_cidr:
+        description: "The CIDR (subnet) for the k3s cluster's internal pod network"
+        type: str
+      k3s_enable_wireguard_network_encryption:
+        description: 'Whether to enable wireguard encryption of network packets between nodes'
+        type: bool
       k3s_storage_dir:
         description: |
           The directory where k3s will store its data.

@@ -82,7 +82,7 @@
               loop: "{{ cni_plugins_needed_plugins }}"
 
           always:
-            - name: "Remove temporary directory for CNI plugins"
+            - name: "Remove the temporary directory for CNI plugins"
               ansible.builtin.file:
                 path: "{{ cni_plugins_tempdir.path }}"
                 state: absent

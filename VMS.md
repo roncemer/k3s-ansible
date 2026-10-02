@@ -6,6 +6,11 @@
 * Create a virtual machine with 8GB RAM and 40GB disk, name it k3s-test-01.
 * Install Ubuntu Server 26.04.1 on the node (add yourself as a user with a password) -- you'll need an arm64 ISO for this.
 * Log into the VM.
+* Create the /storage directory:
+  ```sh
+  sudo mkdir /storage
+  sudo chmod 755 /storage
+  ```
 * Add the ansible user with a password:
   ```sh
   sudo adduser ansible

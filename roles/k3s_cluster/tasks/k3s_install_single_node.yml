@@ -99,36 +99,74 @@
   failed_when: false
   changed_when: 'k3s_cluster_result_delete_my_node.rc == 0'
 
-- name: "Install k3s {{ my_k3s_node_role }} on my node: {{ k3s_install_host }}"
+
+- name: "Create a temporary directory for the k3s installer script"
+  become: true
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: "k3s-installer"
+  register: k3s_cluster_k3s_installer_tempdir
+  changed_when: false
+
+- name: "Download the k3s installer script; install k3s"
   when: 'k3s_cluster_k3s_installed_info.need_install_or_reinstall'
   become: true
-  ansible.builtin.shell:
-    cmd: |
-      set -euo pipefail
+  block:
+    - name: "Download k3s installer script"
+      ansible.builtin.get_url:
+        url: '{{ k3s_cluster_k3s_installer_script_url }}'
+        dest: "{{ k3s_cluster_k3s_installer_tempdir.path }}/k3s-install.sh"
+        mode: '0755'
+      changed_when: false
 
-      curl -sfL {{ k3s_cluster_k3s_installer_script_url | quote }} | \
+    - name: "Install k3s {{ my_k3s_node_role }} on my node: {{ k3s_install_host }}"
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+
           INSTALL_K3S_VERSION={{ k3s_version | quote }} \
-          INSTALL_K3S_EXEC="{{ install_k3s_exec_args | join(' ') }}" \
-      {% if k3s_cluster_k3s_api_host_ipv4 != "" and k3s_cluster_k3s_api_host_token != "" %}
-          K3S_URL={{ ("https://" + k3s_cluster_k3s_api_host_ipv4 + ":6443") | quote }} \
-          K3S_TOKEN={{ k3s_cluster_k3s_api_host_token | quote }} \
-      {% endif %}
-      {% if my_k3s_node_role == "server" %}
-          K3S_KUBECONFIG_MODE="640" \
-          K3S_KUBECONFIG_GROUP={{ k3s_group | quote }} \
-      {% endif %}
-          sh -
-  args:
-    executable: /bin/bash
-  vars:
-    install_k3s_exec_args: |
-      {{
-        [
-          "server --secrets-encryption --flannel-backend=wireguard-native" if my_k3s_node_role == "server" else "",
-          "--cluster-init" if my_k3s_node_role == "server" and k3s_cluster_k3s_api_host_ipv4 == "" else ""
-        ] | reject('==', '') | list
-      }}
-  changed_when: true
+              {{ (k3s_cluster_k3s_installer_tempdir.path + "/k3s-install.sh") | quote }} \
+              {{ my_k3s_node_role | quote }} \
+              {{ install_k3s_exec_args | join(' ') }}
+      args:
+        executable: /bin/bash
+      vars:
+        install_k3s_exec_args: |
+          {{
+            (
+              [
+                "--cluster-init"
+              ] if my_k3s_node_role == "server" and k3s_cluster_k3s_api_host_ipv4 == "" else []
+            ) +
+            (
+              [
+                "--server",
+                ("https://" + k3s_cluster_k3s_api_host_ipv4 + ":6443") | quote,
+                "--token",
+                k3s_cluster_k3s_api_host_token | quote,
+              ] if k3s_cluster_k3s_api_host_ipv4 != "" and k3s_cluster_k3s_api_host_token != "" else []
+            ) +
+            (
+              [
+                ("--cluster-cidr=" + k3s_cluster_pod_network_cidr) | quote,
+                "--secrets-encryption",
+              ] if my_k3s_node_role == "server" else []
+            ) +
+            (
+              [
+                "--flannel-backend=wireguard-native",
+                "--flannel-external-ip",
+              ] if my_k3s_node_role == "server" and k3s_enable_wireguard_network_encryption else []
+            )
+          }}
+      changed_when: true
+
+  always:
+    - name: "Remove the temporary directory for k3s installer script"
+      ansible.builtin.file:
+        path: "{{ k3s_cluster_k3s_installer_tempdir.path }}"
+        state: absent
+      changed_when: false
 
 - name: "Update the composite fact detailing the status of the k3s installation on the host"
   ansible.builtin.set_fact:
@@ -137,6 +175,10 @@
       version: '{{ k3s_version }}'
       role: '{{ my_k3s_node_role }}'
       need_install_or_reinstall: false
+
+#######################################################
+# DO ANY REQUIRED SETUP FOR THE K3S STORAGE DIRECTORY #
+#######################################################
 
 - name: "Create a directory for k3s storage, and symlink it into place."
   when: 'k3s_storage_dir != ""'
@@ -159,69 +201,4 @@
         src: "{{ k3s_storage_dir }}/k3s/storage"
         dest: "/var/lib/rancher/k3s/storage"
         state: link
-        force: true
-
-########################################################################
-# CREATE THE $HOME/.kube DIRECTORY FOR THE SUPERUSER AND THE k3s USER. #
-# SYMLINK THE KUBECONFIG FILE INTO IT.                                 #
-# THIS IS NECESSARY BECAUSE OTHER KUBERNETES UTILITIES DON'T KNOW HOW  #
-# TO READ K3S' KUBECONFIG FILE.                                        #
-########################################################################
-
-- name: "Create the ~/.kube directory for the superuser"
-  when: 'my_k3s_node_role == "server"'
-  become: true
-  block:
-    - name: "Get the superuser's username"
-      ansible.builtin.command: 'id -un'
-      register: k3s_cluster_result_get_superuser_username
-      changed_when: false
-
-    - name: "Get the superuser's group name"
-      ansible.builtin.command: 'id -gn'
-      register: k3s_cluster_result_get_superuser_group_name
-      changed_when: false
-
-    - name: "Get the superuser's home directory"
-      ansible.builtin.command: 'echo "$HOME"'
-      register: k3s_cluster_result_get_superuser_home
-      changed_when: false
-
-    - name: "Make the superuser's .kube directory"
-      ansible.builtin.file:
-        path: '{{ k3s_cluster_result_get_superuser_home.stdout | trim }}/.kube'
-        state: directory
-        owner: '{{ k3s_cluster_result_get_superuser_username.stdout | trim }}'
-        group: '{{ k3s_cluster_result_get_superuser_group_name.stdout | trim }}'
-        mode: '0750'
-
-    - name: "Link /etc/rancher/k3s/k3s.yaml to the superuser's .kube/config"
-      ansible.builtin.file:
-        src: '/etc/rancher/k3s/k3s.yaml'
-        path: '{{ k3s_cluster_result_get_superuser_home.stdout | trim }}/.kube/config'
-        state: link
-        owner: '{{ k3s_cluster_result_get_superuser_username.stdout | trim }}'
-        group: '{{ k3s_cluster_result_get_superuser_group_name.stdout | trim }}'
-        force: true
-
-- name: "Create the ~/.kube directory for the {{ k3s_user }} user, if we created the user"
-  when: 'create_k3s_user and my_k3s_node_role == "server"'
-  become: true
-  become_user: "{{ k3s_user }}"
-  block:
-    - name: "Make the {{ k3s_user }} user's .kube directory"
-      ansible.builtin.file:
-        path: '{{ k3s_user }}/.kube'
-        state: directory
-        owner: '{{ k3s_user | trim }}'
-        group: '{{ k3s_group | trim }}'
-        mode: '0750'
-
-    - name: "Link /etc/rancher/k3s/k3s.yaml to the {{ k3s_user }} user's .kube/config"
-      ansible.builtin.file:
-        src: '/etc/rancher/k3s/k3s.yaml'
-        path: '{{ k3s_user }}/.kube/config'
-        state: link
-        owner: '{{ k3s_user | trim }}'
-        group: '{{ k3s_group | trim }}'
         force: true

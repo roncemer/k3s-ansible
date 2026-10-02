@@ -95,7 +95,7 @@
         cmd: |
             set -euo pipefail
 
-            kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml get node"
+            kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml get node
       args:
         executable: /bin/bash
       register: k3s_cluster_result_wait_for_k3s_api
@@ -103,3 +103,70 @@
       delay: 6
       until: k3s_cluster_result_wait_for_k3s_api.rc == 0
       changed_when: false
+
+########################################################
+# FIX THE PERMISSIONS AND GROUP OF THE KUBECONFIG FILE #
+#######################################################
+
+- name: "Fix the permissions and group of the /etc/rancher/k3s/k3s.yaml kubeconfig file"
+  when: 'my_k3s_node_role == "server"'
+  become: true
+  ansible.builtin.file:
+    path: '/etc/rancher/k3s/k3s.yaml'
+    group: '{{ k3s_group }}'
+    state: file
+    mode: '0640'
+
+- name: "Make the /etc/rancher/k3s/k3s.yaml kubeconfig file permissions and group permanent"
+  when: 'my_k3s_node_role == "server"'
+  become: true
+  ansible.builtin.lineinfile:
+    path: '/etc/systemd/system/k3s.service.env'
+    regexp: '^K3S_KUBECONFIG_MODE='
+    line: 'K3S_KUBECONFIG_MODE=0640'
+
+########################################################################
+# CREATE THE $HOME/.kube DIRECTORY FOR THE SUPERUSER AND THE k3s USER. #
+# SYMLINK THE KUBECONFIG FILE INTO IT.                                 #
+# THIS IS NECESSARY BECAUSE OTHER KUBERNETES UTILITIES DON'T KNOW HOW  #
+# TO READ K3S' KUBECONFIG FILE.                                        #
+########################################################################
+
+- name: "Create the ~/.kube directory for the superuser"
+  when: 'my_k3s_node_role == "server"'
+  become: true
+  block:
+    - name: "Make the superuser's .kube directory"
+      ansible.builtin.file:
+        path: '{{ superuser_home }}/.kube'
+        state: directory
+        owner: '{{ superuser_name }}'
+        group: '{{ superuser_group }}'
+        mode: '0750'
+
+    - name: "Link /etc/rancher/k3s/k3s.yaml to the superuser's .kube/config"
+      ansible.builtin.file:
+        src: '/etc/rancher/k3s/k3s.yaml'
+        path: '{{ superuser_home }}/.kube/config'
+        state: link
+        force: true
+
+- name: "Create the ~/.kube directory for the {{ k3s_user }} user, if we created the user"
+  when: 'create_k3s_user and my_k3s_node_role == "server"'
+  become: true
+  become_user: "{{ k3s_user }}"
+  block:
+    - name: "Make the {{ k3s_user }} user's .kube directory"
+      ansible.builtin.file:
+        path: '{{ k3s_user_home }}/.kube'
+        state: directory
+        owner: '{{ k3s_user | trim }}'
+        group: '{{ k3s_group | trim }}'
+        mode: '0750'
+
+    - name: "Link /etc/rancher/k3s/k3s.yaml to the {{ k3s_user }} user's .kube/config"
+      ansible.builtin.file:
+        src: '/etc/rancher/k3s/k3s.yaml'
+        path: '{{ k3s_user_home }}/.kube/config'
+        state: link
+        force: true
