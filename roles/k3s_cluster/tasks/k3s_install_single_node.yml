@@ -47,7 +47,7 @@
 # CORDON, DRAIN AND DELETE THE NODE FROM THE CLUSTER, UNINSTALL K3S, IF NEEDED. #
 #################################################################################
 
-- name: "Cordon, drain and delete my node: {{ k3s_install_host }}, executing the commands on {{ k3s_cluster_k3s_api_host }}"
+- name: "Cordon, drain and delete node: {{ k3s_install_host }}, executing the kubectl commands on: {{ k3s_cluster_k3s_api_host }}"
   when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall and k3s_cluster_k3s_api_host != ""'
   # We have to default this to a non-empty host in order to avoid getting an error about an empty delegate_to value,
   # even though the "when" condition would prevent this task from running in that case.
@@ -64,7 +64,7 @@
     executable: /bin/bash
   changed_when: true
 
-- name: "Uninstall k3s on my node: {{ k3s_install_host }}"
+- name: "Uninstall k3s on node: {{ k3s_install_host }}"
   when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall'
   become: true
   ansible.builtin.shell:
@@ -119,7 +119,7 @@
         mode: '0755'
       changed_when: false
 
-    - name: "Install k3s {{ my_k3s_node_role }} on my node: {{ k3s_install_host }}"
+    - name: "Install k3s {{ my_k3s_node_role }} on node: {{ k3s_install_host }}"
       ansible.builtin.shell:
         cmd: |
           set -euo pipefail
