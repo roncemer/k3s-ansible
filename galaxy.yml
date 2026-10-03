@@ -1,9 +1,6 @@
 #SPDX-License-Identifier: MIT-0
-### REQUIRED
-# The namespace of the collection. This can be a company/brand/organization or product namespace under which all
-# content lives. May only contain alphanumeric lowercase characters and underscores. Namespaces cannot start with
-# underscores or numbers and cannot contain consecutive underscores
-namespace: roncemer
+# The namespace of the collection.
+namespace: rbcapps
 
 # The name of the collection. Has the same character restrictions as 'namespace'
 name: k3s_ansible
