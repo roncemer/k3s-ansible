@@ -49,7 +49,7 @@
               (not (k3s_cluster_stat_result_k3s_binary.stat.exists
                 and k3s_cluster_stat_result_k3s_binary.stat.isreg and (k3s_cluster_result_get_k3s_role.stdout | trim) != ""))
               or (k3s_cluster_result_get_k3s_version.stdout | trim) != k3s_version
-              or (k3s_cluster_result_get_k3s_role.stdout | trim) != my_k3s_node_role
+              or (k3s_cluster_result_get_k3s_role.stdout | trim) != node_k3s_role
           }}
 
 - name: "Show the k3s installation composite fact before installing or reinstalling k3s"
@@ -79,7 +79,7 @@
     var: k3s_cluster_k3s_installed_info
 
 - name: "Wait for k3s to come up and be accessible"
-  when: 'my_k3s_node_role == "server"'
+  when: 'node_k3s_role == "server"'
   block:
     - name: "Wait for the k3s service to start listening on the default port"
       ansible.builtin.wait_for:
@@ -136,7 +136,7 @@
 #######################################################
 
 - name: "Fix the permissions and group of the /etc/rancher/k3s/k3s.yaml kubeconfig file"
-  when: 'my_k3s_node_role == "server"'
+  when: 'node_k3s_role == "server"'
   become: true
   ansible.builtin.file:
     path: '/etc/rancher/k3s/k3s.yaml'
@@ -145,7 +145,7 @@
     mode: '0640'
 
 - name: "Make the /etc/rancher/k3s/k3s.yaml kubeconfig file permissions and group permanent"
-  when: 'my_k3s_node_role == "server"'
+  when: 'node_k3s_role == "server"'
   become: true
   ansible.builtin.lineinfile:
     path: '/etc/systemd/system/k3s.service.env'
@@ -160,7 +160,7 @@
 ########################################################################
 
 - name: "Create the ~/.kube directory for the superuser"
-  when: 'my_k3s_node_role == "server"'
+  when: 'node_k3s_role == "server"'
   become: true
   block:
     - name: "Make the superuser's .kube directory"
@@ -179,7 +179,7 @@
         force: true
 
 - name: "Create the ~/.kube directory for the {{ k3s_user }} user, if we created the user"
-  when: 'create_k3s_user and my_k3s_node_role == "server"'
+  when: 'create_k3s_user and node_k3s_role == "server"'
   become: true
   become_user: "{{ k3s_user }}"
   block:

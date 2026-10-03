@@ -1,12 +1,13 @@
-# - name: "Install required packages for Longhorn"
-#   become: true
-#   ansible.builtin.package:
-#     name:
-#       - apache2-utils
-#     state: present
-#     update_cache: true
+- name: "Install required packages for Longhorn"
+  become: true
+  ansible.builtin.package:
+    name:
+      # Required for NFS support in Longhorn (ReadWriteMany volumes)
+      - '{{ "nfs-common" if ansible_facts.os_family == "Debian" else "nfs-utils" }}'
+    state: present
+    update_cache: true
 
-- name: "Create a temporary directory for the Longhorn namespace and ingress middleware manifest"
+- name: "Create a temporary directory for the Longhorn ancillary resources manifest"
   run_once: true
   ansible.builtin.tempfile:
     state: directory
@@ -14,18 +15,18 @@
   register: longhorn_middleware_tempdir
   changed_when: false
 
-- name: "Template and apply the Longhorn namespace and ingress middleware manifest; remove the temporary directory"
+- name: "Template and apply the Longhorn ancillary resources manifest; remove the temporary directory"
   run_once: true
   block:
 
-    - name: "Template the Longhorn namespace and ingress middleware manifest"
+    - name: "Template the Longhorn ancillary resources manifest"
       ansible.builtin.template:
         src: "longhorn-namespace-and-related-resources.yaml.j2"
         dest: "{{ longhorn_middleware_tempdir.path }}/longhorn-namespace-and-related-resources.yaml"
         mode: '0644'
       changed_when: false
 
-    - name: "Apply the Longhorn namespace and ingress middleware manifest"
+    - name: "Apply the Longhorn ancillary resources manifest"
       become: true
       ansible.builtin.shell:
         cmd: |
@@ -47,7 +48,7 @@
       failed_when: "longhorn_ingress_middleware_apply_result.rc not in [0, 99]"
 
   always:
-    - name: "Remove the temporary directory for the Longhorn namespace and ingress middleware manifest"
+    - name: "Remove the temporary directory for the Longhorn ancillary resources manifest"
       ansible.builtin.file:
         path: "{{ longhorn_middleware_tempdir.path }}"
         state: absent
@@ -65,38 +66,14 @@
       helm repo update
 
       var_args=()
-      {% if k3s_storage_dir != "" %}
-      var_args+=(--set {{ ("defaultSettings.defaultDataPath=" + k3s_storage_dir + "/longhorn") | quote }})
-      var_args+=(--set {{ ("defaultSettings.logPath=" + k3s_storage_dir + "/longhorn/logs") | quote }})
-      {% endif %}
-
-      {% for arg in longhorn_helm_extra_args %}
+      {% for arg in longhorn_helm_base_args + longhorn_helm_storage_dir_args + longhorn_helm_ingress_args + longhorn_helm_extra_args %}
       var_args+=({{ arg | quote }})
       {% endfor %}
 
       helm upgrade --install longhorn longhorn/longhorn \
           --namespace longhorn-system \
           --version "{{ longhorn_helm_chart_version }}" \
-          --set defaultSettings.defaultDataLocality=best-effort \
-          --set persistence.defaultClass=false \
-          --set persistence.defaultClassReplicaCount={{ longhorn_default_volume_replica_count | quote }} \
-          --set defaultSettings.defaultReplicaCount={{ longhorn_default_volume_replica_count | quote }} \
-          --set persistence.migratable=true \
-          --set ingress.enabled={{ "true" if longhorn_ingress_enabled else "false" }} \
-      {% if longhorn_ingress_enabled %}
-          --set ingressClassName=traefik \
-          --set ingress.host="" \
-          --set ingress.path={{ longhorn_ingress_path | quote }} \
-          --set ingress.pathType={{ longhorn_ingress_path_type | quote }} \
-          --set-json ingress.annotations={{ longhorn_ingress_annotations | to_json | quote }} \
-      {% endif %}
           "${var_args[@]}"
   args:
     executable: /bin/bash
-  vars:
-    longhorn_ingress_annotations: |
-      {{
-          { "traefik.ingress.kubernetes.io/router.middlewares": (longhorn_ingress_middlewares | join(",")) }
-          | combine(longhorn_ingress_extra_annotations)
-      }}
   changed_when: true

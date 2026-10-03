@@ -119,14 +119,14 @@
         mode: '0755'
       changed_when: false
 
-    - name: "Install k3s {{ my_k3s_node_role }} on node: {{ k3s_install_host }}"
+    - name: "Install k3s {{ node_k3s_role }} on node: {{ k3s_install_host }}"
       ansible.builtin.shell:
         cmd: |
           set -euo pipefail
 
           INSTALL_K3S_VERSION={{ k3s_version | quote }} \
               {{ (k3s_cluster_k3s_installer_tempdir.path + "/k3s-install.sh") | quote }} \
-              {{ my_k3s_node_role | quote }} \
+              {{ node_k3s_role | quote }} \
               {{ install_k3s_exec_args | join(' ') }}
       args:
         executable: /bin/bash
@@ -136,7 +136,7 @@
             (
               [
                 "--cluster-init"
-              ] if my_k3s_node_role == "server" and k3s_cluster_k3s_api_host_ipv4 == "" else []
+              ] if node_k3s_role == "server" and k3s_cluster_k3s_api_host_ipv4 == "" else []
             ) +
             (
               [
@@ -150,13 +150,13 @@
               [
                 ("--cluster-cidr=" + k3s_cluster_pod_network_cidr) | quote,
                 "--secrets-encryption",
-              ] if my_k3s_node_role == "server" else []
+              ] if node_k3s_role == "server" else []
             ) +
             (
               [
                 "--flannel-backend=wireguard-native",
                 "--flannel-external-ip",
-              ] if my_k3s_node_role == "server" and k3s_enable_wireguard_network_encryption else []
+              ] if node_k3s_role == "server" and k3s_enable_wireguard_network_encryption else []
             )
           }}
       changed_when: true
@@ -173,5 +173,5 @@
     k3s_cluster_k3s_installed_info:
       is_installed: true
       version: '{{ k3s_version }}'
-      role: '{{ my_k3s_node_role }}'
+      role: '{{ node_k3s_role }}'
       need_install_or_reinstall: false

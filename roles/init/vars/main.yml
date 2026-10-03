@@ -1,5 +1,5 @@
 # The k3s role (server or agent) for the current host.
-my_k3s_node_role: '{{ "server" if (groups[k3s_hosts_group] | ansible.utils.index_of("eq", inventory_hostname)) < num_k3s_server_nodes else "agent" }}'
+node_k3s_role: '{{ "server" if (groups[k3s_hosts_group] | ansible.utils.index_of("eq", inventory_hostname)) < num_k3s_server_nodes else "agent" }}'
 # Location of the symlink k3s uses to locate the cluster's data directory.
 k3s_data_current_symlink: "/var/lib/rancher/k3s/data/current"
 # Location of the k3s bin directory, under the current data symlink.

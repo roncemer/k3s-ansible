@@ -1,4 +1,4 @@
-- name: "Create a temporary directory for the Headlamp ingress middleware manifest"
+- name: "Create a temporary directory for the Headlamp ancillary resources manifest"
   run_once: true
   ansible.builtin.tempfile:
     state: directory
@@ -6,18 +6,18 @@
   register: headlamp_middleware_tempdir
   changed_when: false
 
-- name: "Template and apply the Headlamp ingress middleware manifest; remove the temporary directory"
+- name: "Template and apply the Headlamp ancillary resources manifest; remove the temporary directory"
   run_once: true
   block:
 
-    - name: "Template the Headlamp ingress middleware manifest"
+    - name: "Template the Headlamp ancillary resources manifest"
       ansible.builtin.template:
         src: "headlamp-ingress-middleware.yaml.j2"
         dest: "{{ headlamp_middleware_tempdir.path }}/headlamp-ingress-middleware.yaml"
         mode: '0644'
       changed_when: false
 
-    - name: "Apply the Headlamp ingress middleware manifest"
+    - name: "Apply the Headlamp ancillary resources manifest"
       become: true
       ansible.builtin.shell:
         cmd: |
@@ -39,7 +39,7 @@
       failed_when: "headlamp_ingress_middleware_apply_result.rc not in [0, 99]"
 
   always:
-    - name: "Remove the temporary directory for the Headlamp ingress middleware manifest"
+    - name: "Remove the temporary directory for the Headlamp ancillary resources manifest"
       ansible.builtin.file:
         path: "{{ headlamp_middleware_tempdir.path }}"
         state: absent

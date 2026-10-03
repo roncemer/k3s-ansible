@@ -27,6 +27,7 @@
   args:
     executable: /bin/bash
   register: init_result_superuser_info
+  changed_when: false
 
 - name: "Set superuser information as facts"
   ansible.builtin.set_fact:

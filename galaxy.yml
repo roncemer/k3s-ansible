@@ -1,6 +1,6 @@
 #SPDX-License-Identifier: MIT-0
 # The namespace of the collection.
-namespace: rbcapps
+namespace: rbcapps_us
 
 # The name of the collection. Has the same character restrictions as 'namespace'
 name: k3s_ansible

@@ -70,6 +70,7 @@
             dest: "{{ cni_plugins_cni_dir }}/multus"
             state: link
             force: true
+            follow: false
 
       always:
         - name: "Remove the temporary directory for the Multus-CNI download and extraction"

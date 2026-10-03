@@ -1,4 +1,4 @@
-# Ansible Collection - rbcapps.k3s_ansible
+# Ansible Collection - rbcapps_us.k3s_ansible
 
 A no-nonsense Ansible collection to easily provision or upgrade a K3s cluster.
 
@@ -54,12 +54,12 @@ Set environment variables for the example inventory:
 
 Run the Alive Check playbook to confirm that the nodes are alive:
 ```sh
-ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" rbcapps.k3s_ansible.alive_check
+ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" rbcapps_us.k3s_ansible.alive_check
 ```
 
 Set up the K3s cluster:
 ```sh
-ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" rbcapps.k3s_ansible.setup_k3s_cluster
+ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE" rbcapps_us.k3s_ansible.setup_k3s_cluster
 ```
 
 At the end of the playbook, there should be a Headlamp token.  Point a browser to <http://k3s-test-01.local/headlamp>, copy and paste the token into the token field, and click *Authenticate*.  Click on *Workloads* -> *Pods* to see all of the pods which are running on the cluster.
@@ -70,11 +70,11 @@ You can also access the Longhorn dashboard at <http://k3s-test-01.local/longhorn
 
 Copy the *examples* directory to a new directory outside of this project.
 
-Modify the requirements.yml to use a production tag of the *rbcapps.k3s_ansible* Galaxy collection.
+Modify the requirements.yml to use a production tag of the *rbcapps_us.k3s_ansible* Galaxy collection.
 
-Remove any non-production copy of the *rbcapps.k3s_ansible* collection, and reinstall the configured version:
+Remove any non-production copy of the *rbcapps_us.k3s_ansible* collection, and reinstall the configured version:
 ```sh
-rm -rf ~/.ansible/collections/ansible_collections/rbcapps/k3s_ansible
+rm -rf ~/.ansible/collections/ansible_collections/rbcapps_us/k3s_ansible
 ansible-galaxy install -r requirements.yml
 ```
 
@@ -84,12 +84,12 @@ Create a file named *inventories/k3s-test-cluster/ansible-become-password.txt*, 
 
 This collection contains the following playbooks:
 
-* [rbcapps.k3s_ansible.setup_k3s_cluster](playbooks/setup_k3s_cluster.yml): Builds out a K3s cluster across the nodes (hosts) in the inventory.
-* [rbcapps.k3s_ansible.headlamp_token](playbooks/headlamp_token.yml): Creates a new token for logging into the Headlamp dashboard.
-* [rbcapps.k3s_ansible.uninstall_k3s](playbooks/uninstall_k3s.yml): Uninstalls k3s from all nodes (hosts) in the inventory.
-* [rbcapps.k3s_ansible.alive_check](playbooks/alive_check.yml): Confirms that all nodes are alive and reachable.
-* [rbcapps.k3s_ansible.reboot](playbooks/reboot.yml): Reboots all nodes.
-* [rbcapps.k3s_ansible.shutdown](playbooks/shutdown.yml): Shuts down all nodes.
+* [rbcapps_us.k3s_ansible.setup_k3s_cluster](playbooks/setup_k3s_cluster.yml): Builds out a K3s cluster across the nodes (hosts) in the inventory.
+* [rbcapps_us.k3s_ansible.headlamp_token](playbooks/headlamp_token.yml): Creates a new token for logging into the Headlamp dashboard.
+* [rbcapps_us.k3s_ansible.uninstall_k3s](playbooks/uninstall_k3s.yml): Uninstalls k3s from all nodes (hosts) in the inventory.
+* [rbcapps_us.k3s_ansible.alive_check](playbooks/alive_check.yml): Confirms that all nodes are alive and reachable.
+* [rbcapps_us.k3s_ansible.reboot](playbooks/reboot.yml): Reboots all nodes.
+* [rbcapps_us.k3s_ansible.shutdown](playbooks/shutdown.yml): Shuts down all nodes.
 
 ## Playbook Defaults
 
