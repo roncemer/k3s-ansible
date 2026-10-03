@@ -1,4 +1,4 @@
-- name: "Install CNI plugins"
+- name: "Install the CNI plugins"
   become: true
   block:
     - name: "Get info for the {{ k3s_data_current_symlink }} symlink"
@@ -36,7 +36,7 @@
       failed_when: false
       changed_when: false
 
-    - name: "Install or re-install CNI plugins"
+    - name: "Install or re-install the CNI plugins"
       when: 'cni_plugins_result_check_installed_cni_plugins.rc != 0 or (cni_plugins_result_check_installed_cni_plugins.stdout | trim) == "NEED_INSTALL"'
       block:
         - name: "Create a temporary directory for the CNI plugins download and extraction"
@@ -48,21 +48,21 @@
 
         - name: "Download, extract and install the CNI plugins"
           block:
-            - name: "Download CNI plugins archive"
+            - name: "Download the CNI plugins archive"
               ansible.builtin.get_url:
                 url: '{{ cni_plugins_download_url }}'
                 dest: "{{ cni_plugins_tempdir.path }}/cni-plugins-linux.tgz"
                 mode: '0644'
               changed_when: false
 
-            - name: "Extract CNI plugins"
+            - name: "Extract the CNI plugins"
               ansible.builtin.unarchive:
                 src: "{{ cni_plugins_tempdir.path }}/cni-plugins-linux.tgz"
                 dest: "{{ cni_plugins_tempdir.path }}"
                 remote_src: true
               changed_when: false
 
-            - name: "Move CNI plugins into place"
+            - name: "Move the CNI plugins into place"
               ansible.builtin.command:
                 cmd: 'mv -f "{{ (cni_plugins_tempdir.path + "/" + item) | quote }}" "{{ (cni_plugins_bin_dir + "/" + item) | quote }}"'
               loop: "{{ cni_plugins_needed_plugins }}"
@@ -74,7 +74,7 @@
                 state: directory
                 mode: '0755'
 
-            - name: "Create the symlinks for CNI plugins in {{ cni_plugins_cni_dir }}"
+            - name: "Create the symlinks for the CNI plugins in {{ cni_plugins_cni_dir }}"
               ansible.builtin.file:
                 src: "{{ cni_plugins_bin_dir }}/{{ item }}"
                 dest: "{{ cni_plugins_cni_dir }}/{{ item }}"
@@ -82,7 +82,7 @@
               loop: "{{ cni_plugins_needed_plugins }}"
 
           always:
-            - name: "Remove the temporary directory for CNI plugins"
+            - name: "Remove the temporary directory for the CNI plugins"
               ansible.builtin.file:
                 path: "{{ cni_plugins_tempdir.path }}"
                 state: absent
