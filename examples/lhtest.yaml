@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lhtest
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lhtest-rwx-pvc
+  namespace: lhtest
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn-rwx
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine-pod-1
+  namespace: lhtest
+spec:
+  containers:
+  - name: alpine
+    image: alpine:3.24.2
+    command: ["sh", "-c", "sleep infinity"]
+    volumeMounts:
+    - mountPath: /data
+      name: longhorn-test-shared-vol
+  volumes:
+  - name: longhorn-test-shared-vol
+    persistentVolumeClaim:
+      claimName: lhtest-rwx-pvc
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine-pod-2
+  namespace: lhtest
+spec:
+  containers:
+  - name: alpine
+    image: alpine:3.24.2
+    command: ["sh", "-c", "sleep infinity"]
+    volumeMounts:
+    - mountPath: /data
+      name: longhorn-test-shared-vol
+  volumes:
+  - name: longhorn-test-shared-vol
+    persistentVolumeClaim:
+      claimName: lhtest-rwx-pvc
+

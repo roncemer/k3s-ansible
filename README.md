@@ -66,6 +66,51 @@ At the end of the playbook, there should be a Headlamp token.  Point a browser t
 
 You can also access the Longhorn dashboard at <http://k3s-test-01.local/longhorn>.  The login credentials are set in the `longhorn_ui_credentials` setting in roles/init/defaults/main.yml](roles/init/defaults/main.yml), and can be overridden in your inventory (or your calling role or playbook, if you're writing your own playbooks or roles).
 
+## Testing a Longhorn Shared Volume Between Two Pods
+
+After your k3s cluster has been built out and the Headlamp and Longhorn dashboards are working, you can deploy a test workload to the cluster.
+
+In the examples directory, there is a file named [lhtest.yaml](examples/lhtest.yaml).  Copy this file to the /tmp directory on the first node of the cluster:
+
+```sh
+scp examples/lhtest.yaml k3s-test-01.local:/tmp/
+```
+
+Next, log into the first node run these commands:
+
+```sh
+ssh k3s-test-01.local
+sudo kubectl apply -f /tmp/lhtest.yaml
+```
+
+Wait for the pods to start:
+```sh
+sudo kubectl -n lhtest get pod
+```
+Repeat the above command until both pods are running.
+
+In the first pod, create a test file:
+```sh
+sudo kubectl -n lhtest exec -it alpine-pod-1 -- /bin/sh
+echo "test test test" > /data/test.txt
+exit
+```
+
+In the second pod, show the contents of the test file:
+```sh
+sudo kubectl -n lhtest exec -it alpine-pod-2 -- /bin/sh
+cat /data/test.txt
+exit
+```
+
+You should see the contents of the file: *test test test*
+
+Delete the test pods and associated resources, and remove the temporary YAML manifest:
+```sh
+sudo kubectl delete -f /tmp/lhtest.yaml
+rm -f /tmp/lhtest.yaml
+```
+
 ## Creating a production project
 
 Copy the *examples* directory to a new directory outside of this project.
