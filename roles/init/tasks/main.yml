@@ -3,7 +3,7 @@
   ansible.builtin.assert:
     that: 'num_k3s_server_nodes is odd and num_k3s_server_nodes > 0 and num_k3s_server_nodes <= (groups[k3s_hosts_group] | length)'
 
-- name: "Assert that install_cni_plugins is true if any of the optional components which require CNI plugins are enabled"
+- name: "Assert that install_cni_plugins is true if any of the optional components which require the CNI plugins are enabled"
   when: 'install_multus_cni'
   run_once: true
   ansible.builtin.assert:
