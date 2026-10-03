@@ -57,31 +57,15 @@
       helm repo update
 
       var_args=()
-      {% for arg in headlamp_helm_extra_args %}
+
+      {% for arg in headlamp_helm_base_args + headlamp_helm_ingress_args + headlamp_helm_extra_args %}
       var_args+=({{ arg | quote }})
       {% endfor %}
 
       helm upgrade --install headlamp headlamp/headlamp \
           --namespace kube-system \
           --version "{{ headlamp_helm_chart_version }}" \
-          --set serviceAccount.create=true \
-          --set serviceAccount.name=headlamp-admin \
-          --set clusterRole.create=true \
-          --set clusterRole.name=cluster-admin \
-          --set config.baseURL={{ headlamp_ingress_path | quote }} \
-          --set ingress.enabled={{ "true" if headlamp_ingress_enabled else "false" }} \
-      {% if headlamp_ingress_enabled %}
-          --set ingress.hosts[0].paths[0].path={{ headlamp_ingress_path | quote }} \
-          --set ingress.hosts[0].paths[0].type={{ headlamp_ingress_path_type | quote }} \
-          --set-json ingress.annotations={{ headlamp_ingress_annotations | to_json | quote }} \
-      {% endif %}
           "${var_args[@]}"
   args:
     executable: /bin/bash
-  vars:
-    headlamp_ingress_annotations: |
-      {{
-          { "traefik.ingress.kubernetes.io/router.middlewares": (headlamp_ingress_middlewares | join(",")) }
-          | combine(headlamp_ingress_extra_annotations)
-      }}
   changed_when: true
