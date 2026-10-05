@@ -2,10 +2,25 @@
   become: true
   ansible.builtin.package:
     name:
+      - apache2-utils
       # Required for NFS support in Longhorn (ReadWriteMany volumes)
       - '{{ "nfs-common" if ansible_facts.os_family == "Debian" else "nfs-utils" }}'
     state: present
     update_cache: true
+
+- name: "Calculate htpasswd lines for Longhorn"
+  ansible.builtin.shell:
+    cmd: |
+        set -e
+        set -o pipefail
+
+        {% for creds in longhorn_ui_credentials %}
+        htpasswd -nb {{ creds.username | quote }} {{ creds.password | quote }}
+        {% endfor %}
+  args:
+    executable: /bin/bash
+  changed_when: false
+  register: longhorn_htpasswd_result
 
 - name: "Create a temporary directory for the Longhorn ancillary resources manifest"
   run_once: true
