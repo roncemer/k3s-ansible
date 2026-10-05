@@ -68,12 +68,6 @@ spec:
 
 ---
 
-{% set ns = namespace(htpasswd_lines = []) %}
-{% for creds in longhorn_ui_credentials %}
-{% set ns.htpasswd_lines = ns.htpasswd_lines + [ creds.username + ":" + (creds.password | password_hash('bcrypt')) ] %}
-{% endfor %}
-{% set htpasswd_secret_value = ns.htpasswd_lines | join("\n") %}
-
 apiVersion: v1
 kind: Secret
 metadata:
@@ -81,6 +75,6 @@ metadata:
   namespace: longhorn-system
 type: Opaque
 stringData:
-  auth: {{ htpasswd_secret_value | to_yaml | trim }}
+  auth: {{ longhorn_htpasswd_result.stdout | to_yaml | trim }}
 
 {% endif %} {# longhorn_ingress_enabled #}
