@@ -7,7 +7,6 @@
   ansible.builtin.package:
     name:
       - acl
-      - apache2-utils
       - curl
       - wireguard
     state: present
