@@ -1,11 +1,6 @@
 - name: "Uninstall k3s"
   become: true
   block:
-    - name: "Get the home directory of the become user (superuser)"
-      ansible.builtin.command: "echo $HOME"
-      register: uninstall_k3s_result_get_superuser_home
-      changed_when: false
-
     - name: "Uninstall k3s server or agent, if installed"
       ansible.builtin.shell:
         cmd: |
@@ -40,7 +35,7 @@
           - /etc/cni
           - /dev/longhorn
           - /var/lib/longhorn
-          - '{{ uninstall_k3s_result_get_superuser_home.stdout | trim }}/.kube'
+          - '{{ superuser_home }}/.kube'
 
     - name: "Append directories under {{ k3s_storage_dir }} to uninstall_k3s_dirs_and_files_to_remove fact"
       when: 'k3s_storage_dir != ""'
