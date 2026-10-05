@@ -40,11 +40,11 @@
   cd ~/.ssh
   ssh-keygen -t rsa -b 4096 -m PEM
   ```
-* Add the following to your ~/.ssh/config on your laptop, replacing <username> with your username which you created in the VM:
+* Add the following to your ~/.ssh/config on your laptop, replacing `username` with your username which you created in the VM:
   ```
   # K3s test VMs on my laptop
   Host k3s-test-01.local k3s-test-02.local k3s-test-03.local
-      User <username>
+      User username
       Identityfile ~/.ssh/id-k3s-test
   ```
 * Be sure you can log into the VM before continuing:
@@ -56,3 +56,8 @@
 * In UTM, clone the VM twice.  Change the names of the clones to *k3s-test-02* and *k3s-test-03*, respectively.
 * For each of the clones, in UTM, right-click, then click Edit -> Network.  Next to MAC Address, click Random.  Click Save.
 * Start up all three VMs.
+* In the second and third VM, login and run these commands, replacing `hostname` with k3s-test-02 and k3s-test-03, respectively:
+  ```sh
+  sudo hostnamectl set-hostname hostname
+  sudo reboot
+  ```
