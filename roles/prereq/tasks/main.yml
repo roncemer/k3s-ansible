@@ -2,7 +2,7 @@
 # INSTALL PREREQUISITE PACKAGES #
 #################################
 
-- name: "Install required packages"
+- name: "Install required OS packages"
   become: true
   ansible.builtin.package:
     name:
@@ -11,6 +11,12 @@
       - wireguard
     state: present
     update_cache: true
+
+- name: "Install required Python packages"
+  ansible.builtin.pip:
+    name:
+      - passlib
+    state: present
 
 ########################################################################################
 # CREATE THE K3S GROUP; CREATE OR DELETE THE K3S USER AS NEEDED BASED ON CONFIGURATION #
