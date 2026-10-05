@@ -27,9 +27,10 @@ Change into the *examples* directory.  You will be working from there.
 cd examples
 ```
 
-Install Ansible:
+Install Ansible, Python 3.14, and the  pip module:
 ```sh
-brew install ansible
+brew install ansible python@3.14
+pip3 install passlib
 ```
 
 Install the required Galaxy module(s):
