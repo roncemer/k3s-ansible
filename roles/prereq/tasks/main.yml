@@ -8,6 +8,7 @@
     name:
       - acl
       - curl
+      - jq
       - wireguard
     state: present
     update_cache: true

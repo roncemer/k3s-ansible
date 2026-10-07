@@ -15,6 +15,7 @@
               /usr/local/bin/k3s-agent-uninstall.sh
               retval=99
           fi
+          exit "$retval"
       args:
         executable: /bin/bash
       register: uninstall_k3s_result_k3s_server_agent_uninstall
