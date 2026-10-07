@@ -114,8 +114,3 @@
   register: headlamp_install_or_upgrade_result
   changed_when: 'headlamp_install_or_upgrade_result.rc == 99'
   failed_when: 'headlamp_install_or_upgrade_result.rc not in [0, 99]'
-
-- name: "Show headlamp installation results"
-  run_once: true
-  ansible.builtin.debug:
-    var: headlamp_install_or_upgrade_result
