@@ -68,10 +68,10 @@
       changed_when: "longhorn_ingress_middleware_apply_result.rc == 99"
       failed_when: "longhorn_ingress_middleware_apply_result.rc not in [0, 99]"
 
-    - name: "Show the Longhorn ancillary resources manifest application output and status"
-      run_once: true
-      ansible.builtin.debug:
-        var: longhorn_ingress_middleware_apply_result
+    # - name: "Show the Longhorn ancillary resources manifest application output and status"
+    #   run_once: true
+    #   ansible.builtin.debug:
+    #     var: longhorn_ingress_middleware_apply_result
 
   always:
     - name: "Remove the temporary directory for the Longhorn ancillary resources manifest"
@@ -96,7 +96,7 @@
         helm_chart_version: "{{ longhorn_helm_chart_version }}"
         helm_args: "{{ longhorn_helm_base_args + longhorn_helm_storage_dir_args + longhorn_helm_ingress_args + longhorn_helm_extra_args }}"
 
-- name: "Show the Longhorn installation output and status"
-  run_once: true
-  ansible.builtin.debug:
-    var: helm_chart_install_or_upgrade_result
+# - name: "Show the Longhorn installation output and status"
+#   run_once: true
+#   ansible.builtin.debug:
+#     var: helm_chart_install_or_upgrade_result
