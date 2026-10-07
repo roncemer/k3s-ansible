@@ -54,9 +54,9 @@
         name: helm_chart_install_or_upgrade
       vars:
         helm_namespace: "kube-system"
-        release_name: "headlamp"
-        repo_name: "headlamp"
-        chart_name: "headlamp"
-        chart_url: "{{ headlamp_helm_chart_url }}"
-        chart_version: "{{ headlamp_helm_chart_version }}"
+        helm_release_name: "headlamp"
+        helm_repo_name: "headlamp"
+        helm_chart_name: "headlamp"
+        helm_chart_url: "{{ headlamp_helm_chart_url }}"
+        helm_chart_version: "{{ headlamp_helm_chart_version }}"
         helm_args: "{{ headlamp_helm_base_args + headlamp_helm_ingress_args + headlamp_helm_extra_args }}"

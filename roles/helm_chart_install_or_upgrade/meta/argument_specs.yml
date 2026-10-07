@@ -27,23 +27,23 @@ argument_specs:
         description: 'The Kubernetes namespace into which the application will be installed'
         type: str
         required: true
-      release_name:
+      helm_release_name:
         description: 'The release name under which the application will be installed'
         type: str
         required: true
-      repo_name:
+      helm_repo_name:
         description: 'The repository name for the Helm chart'
         type: str
         required: true
-      chart_name:
+      helm_chart_name:
         description: 'The chart name for the Helm chart, under the specified Helm repository'
         type: str
         required: true
-      chart_url:
+      helm_chart_url:
         description: 'The URL for the Helm chart'
         type: str
         required: true
-      chart_version:
+      helm_chart_version:
         description: 'The version of the Helm chart to install or upgrade to'
         type: str
         required: true

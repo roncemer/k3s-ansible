@@ -1,4 +1,4 @@
-- name: "Install or upgrade {{ release_name }} via its Helm chart"
+- name: "Install or upgrade {{ helm_release_name }} via its Helm chart"
   run_once: true
   ansible.builtin.shell:
     cmd: |
@@ -11,33 +11,33 @@
 
       set +e
       # Determine whether the Helm repository needs to be added; if so, add it.
-      echo "Determining whether the "{{ repo_name | quote }}" helm repository needs to be added"
-      if ! helm repo list | grep -q {{ ('^' + repo_name + '\s') | quote }}; then
-          echo "Adding the helm repository {{ repo_name | quote }}"
-          helm repo add {{ repo_name | quote }} {{ chart_url | quote }} || true
+      echo "Determining whether the "{{ helm_repo_name | quote }}" helm repository needs to be added"
+      if ! helm repo list | grep -q {{ ('^' + helm_repo_name + '\s') | quote }}; then
+          echo "Adding the helm repository {{ helm_repo_name | quote }}"
+          helm repo add {{ helm_repo_name | quote }} {{ helm_chart_url | quote }} || true
       fi
       # Determine whether the release is already installed.
-      echo "Determining whether the "{{ release_name | quote }}" release is already installed"
-      helm --namespace {{ helm_namespace | quote }} status {{ release_name | quote }} >/dev/null 2>&1
+      echo "Determining whether the "{{ helm_release_name | quote }}" release is already installed"
+      helm --namespace {{ helm_namespace | quote }} status {{ helm_release_name | quote }} >/dev/null 2>&1
       helm_status_retval="$?"
       set -e
 
       # If the release is not installed, install it and exit with a special code to indicate a change.
       if [ "$helm_status_retval" -ne 0 ]; then
-          echo "Installing "{{ release_name | quote }}" via the Helm chart"
+          echo "Installing "{{ helm_release_name | quote }}" via the Helm chart"
           helm repo update
-          helm install {{ release_name | quote }} {{ (repo_name + '/' + chart_name) | quote }} \
+          helm install {{ helm_release_name | quote }} {{ (helm_repo_name + '/' + helm_chart_name) | quote }} \
               --namespace {{ helm_namespace | quote }} \
-              --version {{ chart_version | quote }} \
+              --version {{ helm_chart_version | quote }} \
               "${var_args[@]}"
           exit 99
       fi
 
       set +e
-      echo "Determining whether a helm upgrade for the "{{ release_name | quote }}" release would result in any changes"
-      helm template {{ release_name | quote }} {{ (repo_name + '/' + chart_name) | quote }} \
+      echo "Determining whether a helm upgrade for the "{{ helm_release_name | quote }}" release would result in any changes"
+      helm template {{ helm_release_name | quote }} {{ (helm_repo_name + '/' + helm_chart_name) | quote }} \
         --namespace {{ helm_namespace | quote }} \
-        --version {{ chart_version | quote }} \
+        --version {{ helm_chart_version | quote }} \
         "${var_args[@]}" | \
             kubectl diff -f -
       helm_template_kubectl_diff_retval="$?"
@@ -48,11 +48,11 @@
       set -e
 
       if [ "$helm_template_kubectl_diff_retval" -ne 0 ]; then
-          echo "Upgrading "{{ release_name | quote }}" via the Helm chart"
+          echo "Upgrading "{{ helm_release_name | quote }}" via the Helm chart"
           helm repo update
-          helm upgrade {{ release_name | quote }} {{ (repo_name + '/' + chart_name) | quote }} \
+          helm upgrade {{ helm_release_name | quote }} {{ (helm_repo_name + '/' + helm_chart_name) | quote }} \
               --namespace {{ helm_namespace | quote }} \
-              --version {{ chart_version | quote }} \
+              --version {{ helm_chart_version | quote }} \
               "${var_args[@]}"
           exit 99
       fi
