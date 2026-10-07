@@ -102,6 +102,7 @@
 
       if [ "$helm_template_kubectl_diff_retval" -ne 0 ]; then
           echo "Upgrading $release_name via the Helm chart"
+          helm repo update
           helm upgrade "${release_name}" "${chart_name}" \
               --namespace "${namespace}" \
               --version {{ headlamp_helm_chart_version | quote }} \
