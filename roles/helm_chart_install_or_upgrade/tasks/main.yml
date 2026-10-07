@@ -71,7 +71,3 @@
   register: helm_chart_install_or_upgrade_result
   changed_when: 'helm_chart_install_or_upgrade_result.rc == 99'
   failed_when: 'helm_chart_install_or_upgrade_result.rc not in [0, 99]'
-
-- run_once: true
-  debug:
-    var: helm_chart_install_or_upgrade_result
