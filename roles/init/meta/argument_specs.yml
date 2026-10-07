@@ -3,6 +3,9 @@ argument_specs:
   main:
     short_description: "Initialization/setup role for K3s Ansible Galaxy collection"
     options:
+      superuser_name:
+        description: 'The name of the superuser.  If not specified, it will be determined automatically by executing a task with become=true and and become_user unspecified.'
+        type: str
       k3s_hosts_group:
         description: |
           The inventory hosts group name for the nodes in the k3s cluster.

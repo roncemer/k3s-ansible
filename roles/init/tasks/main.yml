@@ -15,22 +15,46 @@
   ansible.builtin.assert:
     that: install_helm
 
-- name: "Get the username, group name, and home directory of the superuser"
-  become: true
-  ansible.builtin.shell:
-    cmd: |
-      set -euo pipefail
+- name: "Get the superuser information when superuser_name is set to a non-empty value"
+  when: 'superuser_name != ""'
+  block:
+    - name: "Get the group name and home directory of the superuser"
+      become: true
+      become_user: '{{ superuser_name }}'
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
 
-      id -un
-      id -gn
-      echo $HOME
-  args:
-    executable: /bin/bash
-  register: init_result_superuser_info
-  changed_when: false
+          id -gn
+          echo $HOME
+      args:
+        executable: /bin/bash
+      register: init_result_superuser_info
+      changed_when: false
+    - name: "Set superuser information as facts"
+      ansible.builtin.set_fact:
+        superuser_group: '{{ superuser_group | default(init_result_superuser_info.stdout_lines[0] | trim, true) }}'
+        superuser_home: '{{ superuser_home | default(init_result_superuser_info.stdout_lines[1] | trim, true) }}'
 
-- name: "Set superuser information as facts"
-  ansible.builtin.set_fact:
-    superuser_name: '{{ init_result_superuser_info.stdout_lines[0] | trim }}'
-    superuser_group: '{{ init_result_superuser_info.stdout_lines[1] | trim }}'
-    superuser_home: '{{ init_result_superuser_info.stdout_lines[2] | trim }}'
+- name: "Get the superuser information when superuser_name is set to empty"
+  when: 'superuser_name == ""'
+  block:
+    - name: "Get the username, group name, and home directory of the superuser"
+      become: true
+      # No become_user specified; use the configured default, or fall back to root if none is configured
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+
+          id -un
+          id -gn
+          echo $HOME
+      args:
+        executable: /bin/bash
+      register: init_result_superuser_info
+      changed_when: false
+    - name: "Set superuser information as facts"
+      ansible.builtin.set_fact:
+        superuser_name: '{{ superuser_name | default(init_result_superuser_info.stdout_lines[0] | trim, true) }}'
+        superuser_group: '{{ superuser_group | default(init_result_superuser_info.stdout_lines[1] | trim, true) }}'
+        superuser_home: '{{ superuser_home | default(init_result_superuser_info.stdout_lines[2] | trim, true) }}'
