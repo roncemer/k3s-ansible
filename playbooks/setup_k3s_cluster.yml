@@ -21,7 +21,7 @@
       tags: [longhorn]
       when: install_longhorn
     - role: headlamp
-      tags: [headlamp]
+      tags: [headlamp, install_headlamp]
       when: install_headlamp
     - role: headlamp_token
       tags: [headlamp, headlamp_token]
