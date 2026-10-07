@@ -8,6 +8,10 @@
     state: present
     update_cache: true
 
+# TODO: This task creates a unique htpasswd file each time, because the salts used to hash the passwords are different each time.
+# This results in the YAML manifest for the ancillary resources being different each time, so the "kubectl diff" command fails.
+# If possible, we should check for the existing secret, and if it has the same usernames, and the same passwords (after hashing
+# using the existing salts from the secret), then just re-use those lines.
 - name: "Calculate htpasswd lines for Longhorn"
   ansible.builtin.shell:
     cmd: |
@@ -47,12 +51,14 @@
         cmd: |
           set -euo pipefail
 
+          echo "Checking for differences in the Longhorn ancillary resources manifest before applying changes"
           set +e
           kubectl diff -f {{ longhorn_middleware_tempdir.path | quote }}/longhorn-namespace-and-related-resources.yaml
           retval="$?"
           set -e
 
           if [ "$retval" -ne 0 ]; then
+              echo "Applying the Longhorn ancillary resources manifest"
               kubectl apply -f {{ longhorn_middleware_tempdir.path | quote }}/longhorn-namespace-and-related-resources.yaml
               exit 99
           fi
@@ -62,6 +68,11 @@
       changed_when: "longhorn_ingress_middleware_apply_result.rc == 99"
       failed_when: "longhorn_ingress_middleware_apply_result.rc not in [0, 99]"
 
+    - name: "Show the Longhorn ancillary resources manifest application output and status"
+      run_once: true
+      ansible.builtin.debug:
+        var: longhorn_ingress_middleware_apply_result
+
   always:
     - name: "Remove the temporary directory for the Longhorn ancillary resources manifest"
       ansible.builtin.file:
@@ -69,26 +80,23 @@
         state: absent
       changed_when: false
 
-# TODO: Find a way to check whether Longhorn is already installed, and the correct version and configuration, before attempting installation.
-- name: "Install Longhorn via the Longhorn Helm chart"
-  run_once: true
+- name: "Install or upgrade Longhorn"
   become: true
-  ansible.builtin.shell:
-    cmd: |
-      set -euo pipefail
+  become_user: "{{ k3s_user if create_k3s_user else superuser_name }}"
+  block:
+    - name: "Install or upgrade Longhorn via the Longhorn Helm chart"
+      ansible.builtin.include_role:
+        name: helm_chart_install_or_upgrade
+      vars:
+        helm_namespace: "longhorn-system"
+        helm_release_name: "longhorn"
+        helm_repo_name: "longhorn"
+        helm_chart_name: "longhorn"
+        helm_chart_url: "{{ longhorn_helm_chart_url }}"
+        helm_chart_version: "{{ longhorn_helm_chart_version }}"
+        helm_args: "{{ longhorn_helm_base_args + longhorn_helm_storage_dir_args + longhorn_helm_ingress_args + longhorn_helm_extra_args }}"
 
-      helm repo add longhorn "{{ longhorn_helm_chart_url }}" || true
-      helm repo update
-
-      var_args=()
-      {% for arg in longhorn_helm_base_args + longhorn_helm_storage_dir_args + longhorn_helm_ingress_args + longhorn_helm_extra_args %}
-      var_args+=({{ arg | quote }})
-      {% endfor %}
-
-      helm upgrade --install longhorn longhorn/longhorn \
-          --namespace longhorn-system \
-          --version "{{ longhorn_helm_chart_version }}" \
-          "${var_args[@]}"
-  args:
-    executable: /bin/bash
-  changed_when: true
+- name: "Show the Longhorn installation output and status"
+  run_once: true
+  ansible.builtin.debug:
+    var: helm_chart_install_or_upgrade_result
