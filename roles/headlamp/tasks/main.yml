@@ -45,7 +45,6 @@
         state: absent
       changed_when: false
 
-# TODO: Find a way to check whether Headlamp is already installed, and the correct version and configuration, before attempting installation.
 - name: "Install Headlamp via the Headlamp Helm chart"
   run_once: true
   become: true
@@ -53,19 +52,69 @@
     cmd: |
       set -euo pipefail
 
-      helm repo add headlamp "{{ headlamp_helm_chart_url }}" || true
-      helm repo update
-
+      namespace="kube-system"
+      release_name="headlamp"
+      repo_name="headlamp"
+      chart_name="headlamp/headlamp"
       var_args=()
-
       {% for arg in headlamp_helm_base_args + headlamp_helm_ingress_args + headlamp_helm_extra_args %}
       var_args+=({{ arg | quote }})
       {% endfor %}
+      echo "var_args: ${var_args[@]}"
 
-      helm upgrade --install headlamp headlamp/headlamp \
-          --namespace kube-system \
-          --version "{{ headlamp_helm_chart_version }}" \
-          "${var_args[@]}"
+      set +e
+      # Determine whether the Helm repository needs to be added; if so, add it.
+      echo "Determining whether the ${repo_name} helm repository needs to be added"
+      if ! helm repo list | grep -q "^${repo_name}\s"; then
+          echo "Adding the helm repository ${repo_name}"
+          helm repo add "${repo_name}" {{ headlamp_helm_chart_url | quote }} || true
+      fi
+      # Determine whether the release is already installed.
+      echo "Determining whether the ${release_name} release is already installed"
+      helm --namespace "${namespace}" status "${release_name}" >/dev/null 2>&1
+      helm_status_retval="$?"
+      set -e
+
+      # If the release is not installed, install it and exit with a special code to indicate a change.
+      if [ "$helm_status_retval" -ne 0 ]; then
+          echo "Installing $release_name via the Helm chart"
+          helm repo update
+          helm install "${release_name}" "${chart_name}" \
+              --namespace "${namespace}" \
+              --version {{ headlamp_helm_chart_version | quote }} \
+              "${var_args[@]}"
+          exit 99
+      fi
+
+      set +e
+      echo "Determining whether a helm upgrade for the ${release_name} release would result in any changes"
+      helm template "${release_name}" "${chart_name}" \
+        --namespace "${namespace}" \
+        --version {{ headlamp_helm_chart_version | quote }} \
+        "${var_args[@]}" | \
+            kubectl diff -f -
+      helm_template_kubectl_diff_retval="$?"
+      if [ "$helm_template_kubectl_diff_retval" -ne 0 ] && [ "$helm_template_kubectl_diff_retval" -ne 1 ]; then
+          echo "Error occurred during helm template and kubectl diff" >&2
+          exit "$helm_template_kubectl_diff_retval"
+      fi
+      set -e
+
+      if [ "$helm_template_kubectl_diff_retval" -ne 0 ]; then
+          echo "Upgrading $release_name via the Helm chart"
+          helm upgrade "${release_name}" "${chart_name}" \
+              --namespace "${namespace}" \
+              --version {{ headlamp_helm_chart_version | quote }} \
+              "${var_args[@]}"
+          exit 99
+      fi
   args:
     executable: /bin/bash
-  changed_when: true
+  register: headlamp_install_or_upgrade_result
+  changed_when: 'headlamp_install_or_upgrade_result.rc == 99'
+  failed_when: 'headlamp_install_or_upgrade_result.rc not in [0, 99]'
+
+- name: "Show headlamp installation results"
+  run_once: true
+  ansible.builtin.debug:
+    var: headlamp_install_or_upgrade_result
