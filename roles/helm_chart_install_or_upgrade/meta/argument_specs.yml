@@ -1,0 +1,54 @@
+argument_specs:
+  main:
+    short_description: "Install or upgrade a package using its Helm chart"
+    description: |
+      This role must run with `become: true`, and `become_user` set to a user which can run kubectl commands.
+      The user under which the commands will be executed must be determined by the playbook or role that includes this role.
+      Since `become_user` is not valid with `ansible.builtin.include_role`, you'll need to wrap `ansible.builtin.include_role`
+      with an outer block which sets `become_user`.
+      Typically, this would look like (assuming you have already run the `init` role, or explicitly set `superuser_name` in
+      your playbook):
+      ```yaml
+        - name: "Install or upgrade <package-name>"
+          become: true
+          become_user: "{{ k3s_user if create_k3s_user else superuser_name }}"
+          block:
+            - name: "Install or upgrade <package-name> via the <package-name> Helm chart"
+              ansible.builtin.include_role:
+                name: helm_chart_install_or_upgrade
+              vars:
+                ...
+      ```
+
+      This role sets the following variables on the host:
+        - `helm_chart_install_or_upgrade_result`: A registred result from `ansible.builtin.shell` for the commands which were executed.
+    options:
+      helm_namespace:
+        description: 'The Kubernetes namespace into which the application will be installed'
+        type: str
+        required: true
+      release_name:
+        description: 'The release name under which the application will be installed'
+        type: str
+        required: true
+      repo_name:
+        description: 'The repository name for the Helm chart'
+        type: str
+        required: true
+      chart_name:
+        description: 'The chart name for the Helm chart, under the specified Helm repository'
+        type: str
+        required: true
+      chart_url:
+        description: 'The URL for the Helm chart'
+        type: str
+        required: true
+      chart_version:
+        description: 'The version of the Helm chart to install or upgrade to'
+        type: str
+        required: true
+      helm_args:
+        description: 'Command-line arguments to pass to Helm'
+        type: list
+        elements: str
+        required: true
