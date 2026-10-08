@@ -100,7 +100,7 @@
           - 'select((.kind == "Job" and .metadata.name == "longhorn-post-upgrade") | not)'
           - 'select((.kind == "Job" and .metadata.name == "longhorn-uninstall") | not)'
 
-- name: "Show the Longhorn installation output and status"
-  run_once: true
-  ansible.builtin.debug:
-    var: helm_chart_install_or_upgrade_result
+# - name: "Show the Longhorn installation output and status"
+#   run_once: true
+#   ansible.builtin.debug:
+#     var: helm_chart_install_or_upgrade_result
