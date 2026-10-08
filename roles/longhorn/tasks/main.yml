@@ -1,5 +1,6 @@
 - name: "Install required packages for Longhorn"
   become: true
+  become_user: "{{ superuser_name }}"
   ansible.builtin.package:
     name:
       - apache2-utils
@@ -12,95 +13,176 @@
 # This results in the YAML manifest for the ancillary resources being different each time, so the "kubectl diff" command fails.
 # If possible, we should check for the existing secret, and if it has the same usernames, and the same passwords (after hashing
 # using the existing salts from the secret), then just re-use those lines.
-- name: "Calculate htpasswd lines for Longhorn"
-  ansible.builtin.shell:
-    cmd: |
-        set -e
-        set -o pipefail
 
-        {% for creds in longhorn_ui_credentials %}
-        htpasswd -nb {{ creds.username | quote }} {{ creds.password | quote }}
-        {% endfor %}
-  args:
-    executable: /bin/bash
-  changed_when: false
-  register: longhorn_htpasswd_result
-
-- name: "Create a temporary directory for the Longhorn ancillary resources manifest"
+- name: "Run Longhorn installation tasks"
   run_once: true
-  ansible.builtin.tempfile:
-    state: directory
-    prefix: "longhorn-middleware"
-  register: longhorn_middleware_tempdir
-  changed_when: false
-
-- name: "Template and apply the Longhorn ancillary resources manifest; remove the temporary directory"
-  run_once: true
-  block:
-
-    - name: "Template the Longhorn ancillary resources manifest"
-      ansible.builtin.template:
-        src: "longhorn-namespace-and-related-resources.yaml.j2"
-        dest: "{{ longhorn_middleware_tempdir.path }}/longhorn-namespace-and-related-resources.yaml"
-        mode: '0644'
-      changed_when: false
-
-    - name: "Apply the Longhorn ancillary resources manifest"
-      become: true
-      ansible.builtin.shell:
-        cmd: |
-          set -euo pipefail
-
-          echo "Checking for differences in the Longhorn ancillary resources manifest before applying changes"
-          set +e
-          kubectl diff -f {{ longhorn_middleware_tempdir.path | quote }}/longhorn-namespace-and-related-resources.yaml
-          retval="$?"
-          set -e
-
-          if [ "$retval" -ne 0 ]; then
-              echo "Applying the Longhorn ancillary resources manifest"
-              kubectl apply -f {{ longhorn_middleware_tempdir.path | quote }}/longhorn-namespace-and-related-resources.yaml
-              exit 99
-          fi
-      args:
-        executable: /bin/bash
-      register: longhorn_ingress_middleware_apply_result
-      changed_when: "longhorn_ingress_middleware_apply_result.rc == 99"
-      failed_when: "longhorn_ingress_middleware_apply_result.rc not in [0, 99]"
-
-    # - name: "Show the Longhorn ancillary resources manifest application output and status"
-    #   run_once: true
-    #   ansible.builtin.debug:
-    #     var: longhorn_ingress_middleware_apply_result
-
-  always:
-    - name: "Remove the temporary directory for the Longhorn ancillary resources manifest"
-      ansible.builtin.file:
-        path: "{{ longhorn_middleware_tempdir.path }}"
-        state: absent
-      changed_when: false
-
-- name: "Install or upgrade Longhorn"
   become: true
   become_user: "{{ k3s_user if create_k3s_user else superuser_name }}"
   block:
-    - name: "Install or upgrade Longhorn via the Longhorn Helm chart"
-      ansible.builtin.include_role:
-        name: helm_chart_install_or_upgrade
-      vars:
-        helm_namespace: "longhorn-system"
-        helm_release_name: "longhorn"
-        helm_repo_name: "longhorn"
-        helm_chart_name: "longhorn"
-        helm_chart_url: "{{ longhorn_helm_chart_url }}"
-        helm_chart_version: "{{ longhorn_helm_chart_version }}"
-        helm_args: "{{ longhorn_helm_base_args + longhorn_helm_storage_dir_args + longhorn_helm_ingress_args + longhorn_helm_extra_args }}"
-        helm_diff_yq_filter_expressions:
-          - 'select((.kind == "Job" and .metadata.name == "longhorn-pre-upgrade") | not)'
-          - 'select((.kind == "Job" and .metadata.name == "longhorn-post-upgrade") | not)'
-          - 'select((.kind == "Job" and .metadata.name == "longhorn-uninstall") | not)'
 
-# - name: "Show the Longhorn installation output and status"
-#   run_once: true
-#   ansible.builtin.debug:
-#     var: helm_chart_install_or_upgrade_result
+    - name: "Get list of existing Longhorn users"
+      ansible.builtin.shell:
+        cmd: |
+          set -e
+          set -o pipefail
+
+          kubectl -n longhorn-system get secret longhorn-dashboard-users -o yaml 2>/dev/null | yq -r '.data.auth' - | base64 --decode
+      args:
+        executable: /bin/bash
+      failed_when: false
+      changed_when: false
+      register: longhorn_existing_htpasswd_contents_result
+
+    - name: "Set existing Longhorn htpasswd lines list"
+      ansible.builtin.set_fact:
+        longhorn_existing_htpasswd_htpasswd_lines: |
+          {{
+            longhorn_existing_htpasswd_contents_result.stdout | default('') | trim |
+              split('\n') | map('trim') | reject('eq', '') | list
+          }}
+
+    - name: "Set existing and expected Longhorn users list facts"
+      ansible.builtin.set_fact:
+        longhorn_existing_users: '{{ longhorn_existing_htpasswd_htpasswd_lines | map("split", ":") | map("first") | list | ansible.builtin.sort }}'
+        longhorn_expected_users: '{{ longhorn_ui_credentials | map(attribute="username") | list | ansible.builtin.sort }}'
+
+    - name: "Set longhorn_users_list_matches fact"
+      ansible.builtin.set_fact:
+        longhorn_users_list_matches: '{{ longhorn_existing_users == longhorn_expected_users }}'
+
+    - name: "Check the existing passwords against the Longhorn users list"
+      when: longhorn_users_list_matches
+      block:
+        - name: "Create a temporary file for the Longhorn htpasswd contents"
+          ansible.builtin.tempfile:
+            state: file
+            prefix: "longhorn-htpasswd-"
+          register: longhorn_htpasswd_tempfile
+          changed_when: false
+
+        - block:
+            - name: "Write the Longhorn htpasswd contents to the temporary file"
+              ansible.builtin.copy:
+                content: "{{ longhorn_existing_htpasswd_htpasswd_lines | join('\n') }}"
+                dest: "{{ longhorn_htpasswd_tempfile.path }}"
+              changed_when: false
+
+            - name: "Verify each user's expected password against the Longhorn htpasswd file"
+              ansible.builtin.shell:
+                cmd: |
+                  set -e
+                  set -o pipefail
+
+                  {% for creds in longhorn_ui_credentials %}
+                  htpasswd -vb {{ longhorn_htpasswd_tempfile.path }} {{ creds.username | quote }} {{ creds.password | quote }}
+                  {% endfor %}
+              args:
+                executable: /bin/bash
+              failed_when: false
+              changed_when: false
+              register: longhorn_htpasswd_verification_result
+
+            - name: "Set longhorn_users_list_matches fact to false if any password verification failed"
+              when: 'longhorn_htpasswd_verification_result.rc != 0'
+              ansible.builtin.set_fact:
+                longhorn_users_list_matches: false
+
+          always:
+            - name: "Remove the temporary file for the Longhorn htpasswd contents"
+              ansible.builtin.file:
+                path: "{{ longhorn_htpasswd_tempfile.path }}"
+                state: absent
+              changed_when: false
+
+    - name: "Calculate (new) htpasswd lines for Longhorn"
+      when: 'not longhorn_users_list_matches'
+      ansible.builtin.shell:
+        cmd: |
+            set -e
+            set -o pipefail
+
+            {% for creds in longhorn_ui_credentials %}
+            htpasswd -nb {{ creds.username | quote }} {{ creds.password | quote }}
+            {% endfor %}
+      args:
+        executable: /bin/bash
+      changed_when: false
+      register: longhorn_htpasswd_result
+
+    - name: "Create a temporary directory for the Longhorn ancillary resources manifest"
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: "longhorn-middleware"
+      register: longhorn_middleware_tempdir
+      changed_when: false
+
+    - name: "Template and apply the Longhorn ancillary resources manifest; remove the temporary directory"
+      block:
+
+        - name: "Template the Longhorn ancillary resources manifest"
+          ansible.builtin.template:
+            src: "longhorn-namespace-and-related-resources.yaml.j2"
+            dest: "{{ longhorn_middleware_tempdir.path }}/longhorn-namespace-and-related-resources.yaml"
+            mode: '0644'
+          vars:
+            longhorn_htpasswd_file_contents: |
+              {{
+                  (longhorn_existing_htpasswd_htpasswd_lines | join('\n')) if longhorn_users_list_matches
+                  else longhorn_htpasswd_result.stdout
+              }}
+          changed_when: false
+
+        - name: "Apply the Longhorn ancillary resources manifest"
+          ansible.builtin.shell:
+            cmd: |
+              set -euo pipefail
+
+              echo "Checking for differences in the Longhorn ancillary resources manifest before applying changes"
+              set +e
+              kubectl diff -f {{ longhorn_middleware_tempdir.path | quote }}/longhorn-namespace-and-related-resources.yaml
+              retval="$?"
+              set -e
+
+              if [ "$retval" -ne 0 ]; then
+                  echo "Applying the Longhorn ancillary resources manifest"
+                  kubectl apply -f {{ longhorn_middleware_tempdir.path | quote }}/longhorn-namespace-and-related-resources.yaml
+                  exit 99
+              fi
+          args:
+            executable: /bin/bash
+          register: longhorn_ingress_middleware_apply_result
+          changed_when: "longhorn_ingress_middleware_apply_result.rc == 99"
+          failed_when: "longhorn_ingress_middleware_apply_result.rc not in [0, 99]"
+
+        # - name: "Show the Longhorn ancillary resources manifest application output and status"
+        #   ansible.builtin.debug:
+        #     var: longhorn_ingress_middleware_apply_result
+
+      always:
+        - name: "Remove the temporary directory for the Longhorn ancillary resources manifest"
+          ansible.builtin.file:
+            path: "{{ longhorn_middleware_tempdir.path }}"
+            state: absent
+          changed_when: false
+
+    - name: "Install or upgrade Longhorn"
+      block:
+        - name: "Install or upgrade Longhorn via the Longhorn Helm chart"
+          ansible.builtin.include_role:
+            name: helm_chart_install_or_upgrade
+          vars:
+            helm_namespace: "longhorn-system"
+            helm_release_name: "longhorn"
+            helm_repo_name: "longhorn"
+            helm_chart_name: "longhorn"
+            helm_chart_url: "{{ longhorn_helm_chart_url }}"
+            helm_chart_version: "{{ longhorn_helm_chart_version }}"
+            helm_args: "{{ longhorn_helm_base_args + longhorn_helm_storage_dir_args + longhorn_helm_ingress_args + longhorn_helm_extra_args }}"
+            helm_diff_yq_filter_expressions:
+              - 'select((.kind == "Job" and .metadata.name == "longhorn-pre-upgrade") | not)'
+              - 'select((.kind == "Job" and .metadata.name == "longhorn-post-upgrade") | not)'
+              - 'select((.kind == "Job" and .metadata.name == "longhorn-uninstall") | not)'
+
+    # - name: "Show the Longhorn installation output and status"
+    #   ansible.builtin.debug:
+    #     var: helm_chart_install_or_upgrade_result

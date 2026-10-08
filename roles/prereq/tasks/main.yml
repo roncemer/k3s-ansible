@@ -4,6 +4,7 @@
 
 - name: "Install required packages"
   become: true
+  become_user: "{{ superuser_name }}"
   ansible.builtin.package:
     name:
       - acl

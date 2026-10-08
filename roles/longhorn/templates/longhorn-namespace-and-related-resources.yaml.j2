@@ -75,6 +75,6 @@ metadata:
   namespace: longhorn-system
 type: Opaque
 stringData:
-  auth: {{ longhorn_htpasswd_result.stdout | to_yaml | trim }}
+  auth: {{ longhorn_htpasswd_file_contents | to_yaml | trim }}
 
 {% endif %} {# longhorn_ingress_enabled #}
