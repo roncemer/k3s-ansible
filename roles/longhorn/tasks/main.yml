@@ -95,9 +95,10 @@
         helm_chart_url: "{{ longhorn_helm_chart_url }}"
         helm_chart_version: "{{ longhorn_helm_chart_version }}"
         helm_args: "{{ longhorn_helm_base_args + longhorn_helm_storage_dir_args + longhorn_helm_ingress_args + longhorn_helm_extra_args }}"
-        helm_diff_exclude_yq_expressions:
-          - 'select(.kind == "Job" and .metadata.name == "longhorn-pre-upgrade")'
-          - 'select(.kind == "Job" and .metadata.name == "longhorn-uninstall")'
+        helm_diff_yq_filter_expressions:
+          - 'select((.kind == "Job" and .metadata.name == "longhorn-pre-upgrade") | not)'
+          - 'select((.kind == "Job" and .metadata.name == "longhorn-post-upgrade") | not)'
+          - 'select((.kind == "Job" and .metadata.name == "longhorn-uninstall") | not)'
 
 - name: "Show the Longhorn installation output and status"
   run_once: true

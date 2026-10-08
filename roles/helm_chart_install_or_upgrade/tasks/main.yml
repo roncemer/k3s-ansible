@@ -53,9 +53,12 @@
         --namespace {{ helm_namespace | quote }} \
         --version {{ helm_chart_version | quote }} \
         "${var_args[@]}" \
-      {% for helm_diff_exclude_yq_expression in helm_diff_exclude_yq_expressions %}
-            | yq {{ ('del(' + helm_diff_exclude_yq_expression + ')') | quote }} - \
+      {% if (helm_diff_yq_filter_expressions | length) > 0 %}
+      {% for helm_diff_exclude_yq_expression in helm_diff_yq_filter_expressions %}
+            | yq {{ helm_diff_exclude_yq_expression | quote }} - --yaml-output \
       {% endfor %}
+            | sed -e 's/^--- null$//g' \
+      {% endif %}
             | kubectl diff -f - 2>&1
       helm_template_kubectl_diff_retval="$?"
       if [ "$helm_template_kubectl_diff_retval" -ne 0 ] && [ "$helm_template_kubectl_diff_retval" -ne 1 ]; then
@@ -71,6 +74,8 @@
               --version {{ helm_chart_version | quote }} \
               "${var_args[@]}"
           exit 99
+      else
+          echo "Helm release "{{ helm_release_name | quote }}" is already up-to-date"
       fi
   args:
     executable: /bin/bash
