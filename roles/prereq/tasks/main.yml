@@ -10,6 +10,7 @@
       - curl
       - jq
       - wireguard
+      - yq
     state: present
     update_cache: true
 

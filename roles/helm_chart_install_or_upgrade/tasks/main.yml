@@ -1,3 +1,6 @@
+# TODO: Figure out why, for longhorn, kubectl diff is exiting with code 1 even when there are no actual changes
+# which are sent to stdout or stderr.
+
 - name: "Install or upgrade {{ helm_release_name }} via its Helm chart"
   run_once: true
   ansible.builtin.shell:
@@ -49,8 +52,11 @@
       helm template {{ helm_release_name | quote }} {{ (helm_repo_name + '/' + helm_chart_name) | quote }} \
         --namespace {{ helm_namespace | quote }} \
         --version {{ helm_chart_version | quote }} \
-        "${var_args[@]}" | \
-            kubectl diff -f -
+        "${var_args[@]}" \
+      {% for helm_diff_exclude_yq_expression in helm_diff_exclude_yq_expressions %}
+            | yq {{ ('del(' + helm_diff_exclude_yq_expression + ')') | quote }} - \
+      {% endfor %}
+            | kubectl diff -f - 2>&1
       helm_template_kubectl_diff_retval="$?"
       if [ "$helm_template_kubectl_diff_retval" -ne 0 ] && [ "$helm_template_kubectl_diff_retval" -ne 1 ]; then
           echo "Error occurred during helm template and kubectl diff" >&2
@@ -71,3 +77,4 @@
   register: helm_chart_install_or_upgrade_result
   changed_when: 'helm_chart_install_or_upgrade_result.rc == 99'
   failed_when: 'helm_chart_install_or_upgrade_result.rc not in [0, 99]'
+ 

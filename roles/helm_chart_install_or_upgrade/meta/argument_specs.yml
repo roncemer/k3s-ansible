@@ -50,3 +50,8 @@ argument_specs:
         type: list
         elements: str
         required: true
+      helm_diff_exclude_yq_expressions:
+        description: 'YQ expressions to exclude certain resources from the kubectl diff when determining whether the Helm chart needs to be upgraded'
+        type: list
+        elements: str
+        required: false
