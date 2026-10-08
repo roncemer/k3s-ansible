@@ -1,6 +1,3 @@
-# TODO: Figure out why, for longhorn, kubectl diff is exiting with code 1 even when there are no actual changes
-# which are sent to stdout or stderr.
-
 - name: "Install or upgrade {{ helm_release_name }} via its Helm chart"
   run_once: true
   ansible.builtin.shell:
