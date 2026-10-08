@@ -3,7 +3,7 @@
 namespace: rbcapps_us
 
 # The name of the collection. Has the same character restrictions as 'namespace'
-name: k3s_ansible
+name: k3s_cluster_ansible
 
 # The version of the collection. Must be compatible with semantic versioning
 version: 1.0.0
@@ -39,16 +39,16 @@ dependencies:
   "ansible.utils": ">=6.1.0"
 
 # The URL of the originating SCM repository
-repository: https://github.com/roncemer/k3s-ansible
+repository: https://github.com/roncemer/k3s-cluster-ansible
 
 # The URL to any online docs
-documentation: https://github.com/roncemer/k3s-ansible/README.md
+documentation: https://github.com/roncemer/k3s-cluster-ansible/README.md
 
 # The URL to the homepage of the collection/project
-homepage: https://github.com/roncemer/k3s-ansible
+homepage: https://github.com/roncemer/k3s-cluster-ansible
 
 # The URL to the collection issue tracker
-issues: https://github.com/roncemer/k3s-ansible/issues
+issues: https://github.com/roncemer/k3s-cluster-ansible/issues
 
 # A list of file glob-like patterns used to filter any files or directories that should not be included in the build
 # artifact. A pattern is matched from the relative path of the file or directory of the collection directory. This
