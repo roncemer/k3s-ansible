@@ -94,7 +94,7 @@ longhorn_helm_storage_dir_args: |
       ] if k3s_storage_dir != "" else []
     )
   }}
-longhorn_ingress_enabled: true
+longhorn_ingress_enabled: false
 longhorn_ingress_path: "/longhorn"
 longhorn_ingress_path_type: "Prefix"
 longhorn_ingress_middlewares:
