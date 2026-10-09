@@ -58,12 +58,14 @@ build_ignore:
   - ".git"
   - ".github"
   - ".gitignore"
+  - ".ansible"
+  - ".config"
   - examples
   - "venv"
   - "tests"
   - "*.md"
   - "Makefile"
-  - "examples/inventories/k3s-test-cluster/ansible-become-password.txt"
+  - "validate-lint"
 
 # A dict controlling use of manifest directives used in building the collection artifact. The key 'directives' is a
 # list of MANIFEST.in style
