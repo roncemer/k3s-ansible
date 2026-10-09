@@ -1,6 +1,5 @@
 # TODO: Find a way to check whether Multus-CNI is already installed, and the correct version and configuration, before attempting installation.
 - name: "Install Multus-CNI"
-  run_once: true
   become: true
   become_user: "{{ superuser_name }}"
   block:
@@ -44,6 +43,7 @@
           changed_when: false
 
         - name: "Apply the Multus-CNI kustomization.yaml manifest"
+          run_once: true
           ansible.builtin.shell:
             cmd: |
               set -euo pipefail
@@ -64,8 +64,6 @@
           failed_when: "multus_cni_apply_result.rc not in [0, 99]"
 
         - name: "Create the symlink for the multus CNI plugin in {{ cni_plugins_cni_dir }}"
-          # This has to run on every node.
-          run_once: false
           ansible.builtin.file:
             src: "{{ multus_cni_cni_plugins_bin_dir }}/multus"
             dest: "{{ cni_plugins_cni_dir }}/multus"
