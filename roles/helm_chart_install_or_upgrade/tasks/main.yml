@@ -9,6 +9,7 @@
       var_args+=({{ arg | quote }})
       {% endfor %}
 
+      {% if not helm_chart_url.startswith('oci://') %}
       set +e
       # Determine whether the Helm repository needs to be added; if so, add it.
       echo "Determining whether the "{{ helm_repo_name | quote }}" helm repository needs to be added"
@@ -20,6 +21,7 @@
 
       echo "Updating Helm repositories."
       helm repo update
+      {% endif %}
 
       set +e
       # Determine whether the release is already installed.
@@ -31,7 +33,7 @@
       # If the release is not installed, install it and exit with a special code to indicate a change.
       if [ "$helm_status_retval" -ne 0 ]; then
           echo "Installing "{{ helm_release_name | quote }}" via the Helm chart"
-          helm install {{ helm_release_name | quote }} {{ (helm_repo_name + '/' + helm_chart_name) | quote }} \
+          helm install {{ helm_release_name | quote }} {{ helm_chart_ref | quote }} \
               --namespace {{ helm_namespace | quote }} \
               --version {{ helm_chart_version | quote }} \
               "${var_args[@]}"
@@ -40,13 +42,13 @@
 
       set +e
       echo "Determining the installed Helm chart version of the "{{ helm_release_name | quote }}" release"
-      installed_helm_chart_version=$(helm -n {{ helm_namespace | quote }} list --selector name={{ helm_release_name | quote }} -o json | jq -r '.[] | .chart' | sed -e 's/^'{{ helm_release_name | quote }}'-//g')
+      installed_helm_chart_version=$(helm -n {{ helm_namespace | quote }} list --selector name={{ helm_release_name | quote }} -o json | jq -r '.[] | .chart' | sed -e 's/^'{{ helm_chart_name | quote }}'-//g')
       echo "Installed Helm chart version: ${installed_helm_chart_version}"
       set -e
 
       set +e
       echo "Determining whether a helm upgrade for the "{{ helm_release_name | quote }}" release would result in any changes"
-      helm template {{ helm_release_name | quote }} {{ (helm_repo_name + '/' + helm_chart_name) | quote }} \
+      helm template {{ helm_release_name | quote }} {{ helm_chart_ref | quote }} \
         --namespace {{ helm_namespace | quote }} \
         --version {{ helm_chart_version | quote }} \
         "${var_args[@]}" \
@@ -66,7 +68,7 @@
 
       if [ "$installed_helm_chart_version" != {{ helm_chart_version | quote }} ] ||[ "$helm_template_kubectl_diff_retval" -ne 0 ]; then
           echo "Upgrading "{{ helm_release_name | quote }}" via the Helm chart"
-          helm upgrade {{ helm_release_name | quote }} {{ (helm_repo_name + '/' + helm_chart_name) | quote }} \
+          helm upgrade {{ helm_release_name | quote }} {{ helm_chart_ref | quote }} \
               --namespace {{ helm_namespace | quote }} \
               --version {{ helm_chart_version | quote }} \
               "${var_args[@]}"
@@ -76,6 +78,8 @@
       fi
   args:
     executable: /bin/bash
+  vars:
+    helm_chart_ref: '{{ (helm_chart_url if helm_chart_url.startswith("oci://") else (helm_repo_name + "/" + helm_chart_name)) }}'
   register: helm_chart_install_or_upgrade_result
   changed_when: 'helm_chart_install_or_upgrade_result.rc == 99'
   failed_when: 'helm_chart_install_or_upgrade_result.rc not in [0, 99]'
