@@ -2,6 +2,7 @@
 - name: "Install Multus-CNI"
   run_once: true
   become: true
+  become_user: "{{ superuser_name }}"
   block:
     - name: "Get info for the {{ k3s_data_current_symlink }} symlink"
       ansible.builtin.stat:
