@@ -9,11 +9,6 @@
     state: present
     update_cache: true
 
-# TODO: This task creates a unique htpasswd file each time, because the salts used to hash the passwords are different each time.
-# This results in the YAML manifest for the ancillary resources being different each time, so the "kubectl diff" command fails.
-# If possible, we should check for the existing secret, and if it has the same usernames, and the same passwords (after hashing
-# using the existing salts from the secret), then just re-use those lines.
-
 - name: "Run Longhorn installation tasks"
   run_once: true
   become: true
@@ -35,15 +30,14 @@
 
     - name: "Set existing Longhorn htpasswd lines list"
       ansible.builtin.set_fact:
-        longhorn_existing_htpasswd_htpasswd_lines: |
+        longhorn_existing_htpasswd_lines: |
           {{
-            longhorn_existing_htpasswd_contents_result.stdout | default('') | trim |
-              split('\n') | map('trim') | reject('eq', '') | list
+              longhorn_existing_htpasswd_contents_result.stdout_lines | default([]) | map("trim") | reject("eq", "") | list
           }}
 
     - name: "Set existing and expected Longhorn users list facts"
       ansible.builtin.set_fact:
-        longhorn_existing_users: '{{ longhorn_existing_htpasswd_htpasswd_lines | map("split", ":") | map("first") | list | ansible.builtin.sort }}'
+        longhorn_existing_users: '{{ longhorn_existing_htpasswd_lines | map("split", ":") | map("first") | list | ansible.builtin.sort }}'
         longhorn_expected_users: '{{ longhorn_ui_credentials | map(attribute="username") | list | ansible.builtin.sort }}'
 
     - name: "Set longhorn_users_list_matches fact"
@@ -63,7 +57,7 @@
         - block:
             - name: "Write the Longhorn htpasswd contents to the temporary file"
               ansible.builtin.copy:
-                content: "{{ longhorn_existing_htpasswd_htpasswd_lines | join('\n') }}"
+                content: '{{ longhorn_existing_htpasswd_contents_result.stdout }}'
                 dest: "{{ longhorn_htpasswd_tempfile.path }}"
               changed_when: false
 
@@ -101,9 +95,13 @@
             set -e
             set -o pipefail
 
+            {% if (longhorn_ui_credentials | length) > 0 %}
+            {
             {% for creds in longhorn_ui_credentials %}
-            htpasswd -nb {{ creds.username | quote }} {{ creds.password | quote }}
+                htpasswd -nb {{ creds.username | quote }} {{ creds.password | quote }}
             {% endfor %}
+            } | grep -v '^$'
+            {% endif %}
       args:
         executable: /bin/bash
       changed_when: false
@@ -127,7 +125,7 @@
           vars:
             longhorn_htpasswd_file_contents: |
               {{
-                  (longhorn_existing_htpasswd_htpasswd_lines | join('\n')) if longhorn_users_list_matches
+                  longhorn_existing_htpasswd_contents_result.stdout if longhorn_users_list_matches
                   else longhorn_htpasswd_result.stdout
               }}
           changed_when: false
@@ -154,10 +152,6 @@
           changed_when: "longhorn_ingress_middleware_apply_result.rc == 99"
           failed_when: "longhorn_ingress_middleware_apply_result.rc not in [0, 99]"
 
-        # - name: "Show the Longhorn ancillary resources manifest application output and status"
-        #   ansible.builtin.debug:
-        #     var: longhorn_ingress_middleware_apply_result
-
       always:
         - name: "Remove the temporary directory for the Longhorn ancillary resources manifest"
           ansible.builtin.file:
@@ -182,7 +176,3 @@
               - 'select((.kind == "Job" and .metadata.name == "longhorn-pre-upgrade") | not)'
               - 'select((.kind == "Job" and .metadata.name == "longhorn-post-upgrade") | not)'
               - 'select((.kind == "Job" and .metadata.name == "longhorn-uninstall") | not)'
-
-    # - name: "Show the Longhorn installation output and status"
-    #   ansible.builtin.debug:
-    #     var: helm_chart_install_or_upgrade_result
