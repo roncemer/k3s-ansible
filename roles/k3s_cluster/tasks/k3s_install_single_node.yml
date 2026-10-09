@@ -22,10 +22,10 @@
 
 - name: "Get the server token for the k3s API host; set the k3s_cluster_k3s_api_host_token fact"
   when: 'k3s_cluster_k3s_api_host != ""'
+  become: true
+  become_user: '{{ superuser_name }}'
   block:
     - name: "Get the server token for the k3s API host"
-      become: true
-      become_user: '{{ superuser_name }}'
       ansible.builtin.slurp:
         src: "/var/lib/rancher/k3s/server/token"
       no_log: true
@@ -59,6 +59,8 @@
 
 - name: "K3s installation or upgrade for node: {{ k3s_install_host }} in a cluster with multiple server nodes, or when k3s is not installed on the node"
   when: 'not k3s_cluster_node_is_only_existing_server_node_and_needs_upgrade'
+  become: true
+  become_user: '{{ superuser_name }}'
   block:
 
     #################################################################################
@@ -70,8 +72,6 @@
       # We have to default this to a non-empty host in order to avoid getting an error about an empty delegate_to value,
       # even though the "when" condition would prevent this task from running in that case.
       delegate_to: '{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}'
-      become: true
-      become_user: '{{ superuser_name }}'
       ansible.builtin.shell:
         cmd: |
           set -euo pipefail
@@ -85,8 +85,6 @@
 
     - name: "Uninstall k3s on node: {{ k3s_install_host }}"
       when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall'
-      become: true
-      become_user: '{{ superuser_name }}'
       ansible.builtin.shell:
         cmd: |
           set -euo pipefail
@@ -107,8 +105,6 @@
     - name: "If this node is listed in the cluster's node list, delete it from the cluster"
       when: 'k3s_cluster_k3s_api_host != ""'
       delegate_to: '{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}'
-      become: true
-      become_user: '{{ superuser_name }}'
       ansible.builtin.shell:
         cmd: |
           set -euo pipefail
@@ -122,8 +118,6 @@
 
     - name: "Create a temporary directory for the k3s installer script"
       when: 'k3s_cluster_k3s_installed_info.need_install_or_reinstall'
-      become: true
-      become_user: '{{ superuser_name }}'
       ansible.builtin.tempfile:
         state: directory
         prefix: "k3s-installer"
@@ -132,8 +126,6 @@
 
     - name: "Download the k3s installer script; install k3s"
       when: 'k3s_cluster_k3s_installed_info.need_install_or_reinstall'
-      become: true
-      become_user: '{{ superuser_name }}'
       block:
         - name: "Download k3s installer script"
           ansible.builtin.get_url:
@@ -186,7 +178,7 @@
           changed_when: true
 
       always:
-        - name: "Remove the temporary directory for k3s installer script"
+        - name: "Remove the temporary directory for the k3s installer script"
           ansible.builtin.file:
             path: "{{ k3s_cluster_k3s_installer_tempdir.path }}"
             state: absent
@@ -194,10 +186,10 @@
 
 - name: "K3s upgrade for node: {{ k3s_install_host }} in a single-node cluster with k3s already installed"
   when: 'k3s_cluster_node_is_only_existing_server_node_and_needs_upgrade'
+  become: true
+  become_user: '{{ superuser_name }}'
   block:
     - name: "Create a temporary directory for the k3s installer script"
-      become: true
-      become_user: '{{ superuser_name }}'
       ansible.builtin.tempfile:
         state: directory
         prefix: "k3s-installer"
@@ -205,8 +197,6 @@
       changed_when: false
 
     - name: "Download the k3s installer script; upgrade k3s"
-      become: true
-      become_user: '{{ superuser_name }}'
       block:
         - name: "Download k3s installer script"
           ansible.builtin.get_url:
@@ -221,14 +211,29 @@
               set -euo pipefail
 
               INSTALL_K3S_VERSION={{ k3s_version | quote }} \
-                  {{ (k3s_cluster_k3s_installer_tempdir.path + "/k3s-install.sh") | quote }}
+                  {{ (k3s_cluster_k3s_installer_tempdir.path + "/k3s-install.sh") | quote }} \
+                  {{ install_k3s_exec_args | join(' ') }}
           args:
             executable: /bin/bash
           no_log: true
+          vars:
+            install_k3s_exec_args: |
+              {{
+                [
+                  ("--cluster-cidr=" + k3s_cluster_pod_network_cidr) | quote,
+                  "--secrets-encryption",
+                ] +
+                (
+                  [
+                    "--flannel-backend=wireguard-native",
+                    "--flannel-external-ip",
+                  ] if k3s_enable_wireguard_network_encryption else []
+                )
+              }}
           changed_when: true
 
       always:
-        - name: "Remove the temporary directory for k3s installer script"
+        - name: "Remove the temporary directory for the k3s installer script"
           ansible.builtin.file:
             path: "{{ k3s_cluster_k3s_installer_tempdir.path }}"
             state: absent
