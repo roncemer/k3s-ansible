@@ -54,11 +54,13 @@
           register: longhorn_htpasswd_tempfile
           changed_when: false
 
-        - block:
+        - name: "Write the Longhorn htpasswd contents to the temporary file; check each Longhorn user's password"
+          block:
             - name: "Write the Longhorn htpasswd contents to the temporary file"
               ansible.builtin.copy:
                 content: '{{ longhorn_existing_htpasswd_contents_result.stdout }}'
                 dest: "{{ longhorn_htpasswd_tempfile.path }}"
+                mode: '0600'
               changed_when: false
 
             - name: "Verify each user's expected password against the Longhorn htpasswd file"
