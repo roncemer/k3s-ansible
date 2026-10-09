@@ -2,18 +2,32 @@
 # INSTALL PREREQUISITE PACKAGES #
 #################################
 
-- name: "Install required packages"
+- name: "Required package installation and conflicting package removal"
   become: true
   become_user: "{{ superuser_name }}"
-  ansible.builtin.package:
-    name:
-      - acl
-      - curl
-      - jq
-      - wireguard
-      - yq
-    state: present
-    update_cache: true
+  block:
+    - name: "Install required packages"
+      ansible.builtin.package:
+        name:
+          - acl
+          - curl
+          - jq
+          - wireguard
+          - yq
+        state: present
+        update_cache: true
+
+    - name: "Remove the multipath-tools package, because it interferes with Longhorn filesystem creation"
+      ansible.builtin.package:
+        name:
+          - multipath-tools
+        state: absent
+        update_cache: true
+
+    - name: "Kill any running multipath processes"
+      ansible.builtin.command: "pkill -9 multipath"
+      changed_when: false
+      failed_when: false
 
 ########################################################################################
 # CREATE THE K3S GROUP; CREATE OR DELETE THE K3S USER AS NEEDED BASED ON CONFIGURATION #
