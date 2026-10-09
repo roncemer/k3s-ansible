@@ -25,6 +25,7 @@
   block:
     - name: "Get the server token for the k3s API host"
       become: true
+      become_user: '{{ superuser_name }}'
       ansible.builtin.slurp:
         src: "/var/lib/rancher/k3s/server/token"
       no_log: true
@@ -45,135 +46,193 @@
       - 'k3s_cluster_k3s_api_host_ipv4: {{ k3s_cluster_k3s_api_host_ipv4 }}'
       - 'k3s_cluster_k3s_api_host_token: {{ k3s_cluster_k3s_api_host_token | regex_replace(".", "*") }}'
 
-# TODO: When the current node is the only server node in the cluster, we have to upgrade it differently.
-# See here: https://share.google/3XjE7stM4f4woQNuK
-# Specifically: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.32.1+k3s1 sh -
+- name: "Set k3s_cluster_node_is_only_existing_server_node_and_needs_upgrade fact"
+  ansible.builtin.set_fact:
+    k3s_cluster_node_is_only_existing_server_node_and_needs_upgrade: |
+      {{
+        num_k3s_server_nodes <= 1
+          and node_k3s_role == "server"
+          and k3s_cluster_k3s_installed_info.is_installed
+          and k3s_cluster_k3s_installed_info.role == "server"
+          and k3s_cluster_k3s_installed_info.need_install_or_reinstall
+      }}
 
-#################################################################################
-# CORDON, DRAIN AND DELETE THE NODE FROM THE CLUSTER, UNINSTALL K3S, IF NEEDED. #
-#################################################################################
-
-- name: "Cordon, drain and delete node: {{ k3s_install_host }}, executing the kubectl commands on: {{ k3s_cluster_k3s_api_host }}"
-  when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall and k3s_cluster_k3s_api_host != ""'
-  # We have to default this to a non-empty host in order to avoid getting an error about an empty delegate_to value,
-  # even though the "when" condition would prevent this task from running in that case.
-  delegate_to: '{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}'
-  become: true
-  ansible.builtin.shell:
-    cmd: |
-      set -euo pipefail
-
-      kubectl cordon {{ k3s_install_host.split('.')[0] }}
-      kubectl drain {{ k3s_install_host.split('.')[0] }} --ignore-daemonsets --delete-emptydir-data --force
-      kubectl delete node {{ k3s_install_host.split('.')[0] }}
-  args:
-    executable: /bin/bash
-  changed_when: true
-
-- name: "Uninstall k3s on node: {{ k3s_install_host }}"
-  when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall'
-  become: true
-  ansible.builtin.shell:
-    cmd: |
-      set -euo pipefail
-
-      {% if k3s_cluster_k3s_installed_info.role == "server" %}
-      /usr/local/bin/k3s-uninstall.sh
-      {% elif k3s_cluster_k3s_installed_info.role == "agent" %}
-      /usr/local/bin/k3s-agent-uninstall.sh
-      {% endif %}
-  args:
-    executable: /bin/bash
-  changed_when: true
-
-##############################################################################
-# INSTALL K3S ON THE NODE; JOIN THE CLUSTER IF WE HAVE ANOTHER RUNNING NODE. #
-##############################################################################
-
-- name: "If this node is listed in the cluster's node list, delete it from the cluster"
-  when: 'k3s_cluster_k3s_api_host != ""'
-  delegate_to: '{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}'
-  become: true
-  ansible.builtin.shell:
-    cmd: |
-      set -euo pipefail
-
-      kubectl delete node {{ k3s_install_host.split('.')[0] | quote }}
-  args:
-    executable: /bin/bash
-  register: k3s_cluster_result_delete_my_node
-  failed_when: false
-  changed_when: 'k3s_cluster_result_delete_my_node.rc == 0'
-
-
-- name: "Create a temporary directory for the k3s installer script"
-  become: true
-  ansible.builtin.tempfile:
-    state: directory
-    prefix: "k3s-installer"
-  register: k3s_cluster_k3s_installer_tempdir
-  changed_when: false
-
-- name: "Download the k3s installer script; install k3s"
-  when: 'k3s_cluster_k3s_installed_info.need_install_or_reinstall'
-  become: true
+- name: "K3s installation or upgrade for node: {{ k3s_install_host }} in a cluster with multiple server nodes, or when k3s is not installed on the node"
+  when: 'not k3s_cluster_node_is_only_existing_server_node_and_needs_upgrade'
   block:
-    - name: "Download k3s installer script"
-      ansible.builtin.get_url:
-        url: '{{ k3s_cluster_k3s_installer_script_url }}'
-        dest: "{{ k3s_cluster_k3s_installer_tempdir.path }}/k3s-install.sh"
-        mode: '0755'
-      changed_when: false
 
-    - name: "Install k3s {{ node_k3s_role }} on node: {{ k3s_install_host }}"
+    #################################################################################
+    # CORDON, DRAIN AND DELETE THE NODE FROM THE CLUSTER, UNINSTALL K3S, IF NEEDED. #
+    #################################################################################
+
+    - name: "Cordon, drain and delete node: {{ k3s_install_host }}, executing the kubectl commands on: {{ k3s_cluster_k3s_api_host }}"
+      when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall and k3s_cluster_k3s_api_host != ""'
+      # We have to default this to a non-empty host in order to avoid getting an error about an empty delegate_to value,
+      # even though the "when" condition would prevent this task from running in that case.
+      delegate_to: '{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}'
+      become: true
+      become_user: '{{ superuser_name }}'
       ansible.builtin.shell:
         cmd: |
           set -euo pipefail
 
-          INSTALL_K3S_VERSION={{ k3s_version | quote }} \
-              {{ (k3s_cluster_k3s_installer_tempdir.path + "/k3s-install.sh") | quote }} \
-              {{ node_k3s_role | quote }} \
-              {{ install_k3s_exec_args | join(' ') }}
+          kubectl cordon {{ k3s_install_host.split('.')[0] }}
+          kubectl drain {{ k3s_install_host.split('.')[0] }} --ignore-daemonsets --delete-emptydir-data --force
+          kubectl delete node {{ k3s_install_host.split('.')[0] }}
       args:
         executable: /bin/bash
-      no_log: true
-      vars:
-        install_k3s_exec_args: |
-          {{
-            (
-              [
-                "--cluster-init"
-              ] if node_k3s_role == "server" and k3s_cluster_k3s_api_host_ipv4 == "" else []
-            ) +
-            (
-              [
-                "--server",
-                ("https://" + k3s_cluster_k3s_api_host_ipv4 + ":6443") | quote,
-                "--token",
-                k3s_cluster_k3s_api_host_token | quote,
-              ] if k3s_cluster_k3s_api_host_ipv4 != "" and k3s_cluster_k3s_api_host_token != "" else []
-            ) +
-            (
-              [
-                ("--cluster-cidr=" + k3s_cluster_pod_network_cidr) | quote,
-                "--secrets-encryption",
-              ] if node_k3s_role == "server" else []
-            ) +
-            (
-              [
-                "--flannel-backend=wireguard-native",
-                "--flannel-external-ip",
-              ] if node_k3s_role == "server" and k3s_enable_wireguard_network_encryption else []
-            )
-          }}
       changed_when: true
 
-  always:
-    - name: "Remove the temporary directory for k3s installer script"
-      ansible.builtin.file:
-        path: "{{ k3s_cluster_k3s_installer_tempdir.path }}"
-        state: absent
+    - name: "Uninstall k3s on node: {{ k3s_install_host }}"
+      when: 'k3s_cluster_k3s_installed_info.is_installed and k3s_cluster_k3s_installed_info.need_install_or_reinstall'
+      become: true
+      become_user: '{{ superuser_name }}'
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+
+          {% if k3s_cluster_k3s_installed_info.role == "server" %}
+          /usr/local/bin/k3s-uninstall.sh
+          {% elif k3s_cluster_k3s_installed_info.role == "agent" %}
+          /usr/local/bin/k3s-agent-uninstall.sh
+          {% endif %}
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    ##############################################################################
+    # INSTALL K3S ON THE NODE; JOIN THE CLUSTER IF WE HAVE ANOTHER RUNNING NODE. #
+    ##############################################################################
+
+    - name: "If this node is listed in the cluster's node list, delete it from the cluster"
+      when: 'k3s_cluster_k3s_api_host != ""'
+      delegate_to: '{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}'
+      become: true
+      become_user: '{{ superuser_name }}'
+      ansible.builtin.shell:
+        cmd: |
+          set -euo pipefail
+
+          kubectl delete node {{ k3s_install_host.split('.')[0] | quote }}
+      args:
+        executable: /bin/bash
+      register: k3s_cluster_result_delete_my_node
+      failed_when: false
+      changed_when: 'k3s_cluster_result_delete_my_node.rc == 0'
+
+    - name: "Create a temporary directory for the k3s installer script"
+      when: 'k3s_cluster_k3s_installed_info.need_install_or_reinstall'
+      become: true
+      become_user: '{{ superuser_name }}'
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: "k3s-installer"
+      register: k3s_cluster_k3s_installer_tempdir
       changed_when: false
+
+    - name: "Download the k3s installer script; install k3s"
+      when: 'k3s_cluster_k3s_installed_info.need_install_or_reinstall'
+      become: true
+      become_user: '{{ superuser_name }}'
+      block:
+        - name: "Download k3s installer script"
+          ansible.builtin.get_url:
+            url: '{{ k3s_cluster_k3s_installer_script_url }}'
+            dest: "{{ k3s_cluster_k3s_installer_tempdir.path }}/k3s-install.sh"
+            mode: '0755'
+          changed_when: false
+
+        - name: "Install k3s {{ node_k3s_role }} on node: {{ k3s_install_host }}"
+          ansible.builtin.shell:
+            cmd: |
+              set -euo pipefail
+
+              INSTALL_K3S_VERSION={{ k3s_version | quote }} \
+                  {{ (k3s_cluster_k3s_installer_tempdir.path + "/k3s-install.sh") | quote }} \
+                  {{ node_k3s_role | quote }} \
+                  {{ install_k3s_exec_args | join(' ') }}
+          args:
+            executable: /bin/bash
+          no_log: true
+          vars:
+            install_k3s_exec_args: |
+              {{
+                (
+                  [
+                    "--cluster-init"
+                  ] if node_k3s_role == "server" and k3s_cluster_k3s_api_host_ipv4 == "" else []
+                ) +
+                (
+                  [
+                    "--server",
+                    ("https://" + k3s_cluster_k3s_api_host_ipv4 + ":6443") | quote,
+                    "--token",
+                    k3s_cluster_k3s_api_host_token | quote,
+                  ] if k3s_cluster_k3s_api_host_ipv4 != "" and k3s_cluster_k3s_api_host_token != "" else []
+                ) +
+                (
+                  [
+                    ("--cluster-cidr=" + k3s_cluster_pod_network_cidr) | quote,
+                    "--secrets-encryption",
+                  ] if node_k3s_role == "server" else []
+                ) +
+                (
+                  [
+                    "--flannel-backend=wireguard-native",
+                    "--flannel-external-ip",
+                  ] if node_k3s_role == "server" and k3s_enable_wireguard_network_encryption else []
+                )
+              }}
+          changed_when: true
+
+      always:
+        - name: "Remove the temporary directory for k3s installer script"
+          ansible.builtin.file:
+            path: "{{ k3s_cluster_k3s_installer_tempdir.path }}"
+            state: absent
+          changed_when: false
+
+- name: "K3s upgrade for node: {{ k3s_install_host }} in a single-node cluster with k3s already installed"
+  when: 'k3s_cluster_node_is_only_existing_server_node_and_needs_upgrade'
+  block:
+    - name: "Create a temporary directory for the k3s installer script"
+      become: true
+      become_user: '{{ superuser_name }}'
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: "k3s-installer"
+      register: k3s_cluster_k3s_installer_tempdir
+      changed_when: false
+
+    - name: "Download the k3s installer script; upgrade k3s"
+      become: true
+      become_user: '{{ superuser_name }}'
+      block:
+        - name: "Download k3s installer script"
+          ansible.builtin.get_url:
+            url: '{{ k3s_cluster_k3s_installer_script_url }}'
+            dest: "{{ k3s_cluster_k3s_installer_tempdir.path }}/k3s-install.sh"
+            mode: '0755'
+          changed_when: false
+
+        - name: "Upgrade k3s {{ node_k3s_role }} on node: {{ k3s_install_host }}"
+          ansible.builtin.shell:
+            cmd: |
+              set -euo pipefail
+
+              INSTALL_K3S_VERSION={{ k3s_version | quote }} \
+                  {{ (k3s_cluster_k3s_installer_tempdir.path + "/k3s-install.sh") | quote }}
+          args:
+            executable: /bin/bash
+          no_log: true
+          changed_when: true
+
+      always:
+        - name: "Remove the temporary directory for k3s installer script"
+          ansible.builtin.file:
+            path: "{{ k3s_cluster_k3s_installer_tempdir.path }}"
+            state: absent
+          changed_when: false
 
 - name: "Update the composite fact detailing the status of the k3s installation on the host"
   ansible.builtin.set_fact:
