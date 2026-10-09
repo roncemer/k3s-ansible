@@ -1,0 +1,16 @@
+- name: "Run Stakater Reloader installation tasks"
+  run_once: true
+  become: true
+  become_user: "{{ k3s_user if create_k3s_user else superuser_name }}"
+  block:
+    - name: "Install or upgrade Stakater Reloader via the Stakater Reloader Helm chart"
+      ansible.builtin.include_role:
+        name: helm_chart_install_or_upgrade
+      vars:
+        helm_namespace: "default"
+        helm_release_name: "reloader"
+        helm_repo_name: "stakater"
+        helm_chart_name: "reloader"
+        helm_chart_url: "{{ stakater_reloader_helm_chart_url }}"
+        helm_chart_version: "{{ stakater_reloader_helm_chart_version }}"
+        helm_args: "{{ stakater_reloader_helm_extra_args }}"

@@ -81,7 +81,7 @@ argument_specs:
       install_headlamp:
         description: |
           Whether to install Headlamp.
-          Headlamp is installed via the Headlamp Helm chart, so if install_headlamp is true
+          It is installed via Helm chart, so if install_headlamp is true
           and install_helm is false, the play will fail.
         type: bool
       headlamp_helm_chart_version:
@@ -130,7 +130,7 @@ argument_specs:
       install_longhorn:
         description: |
           Whether to install Longhorn block storage.
-          Longhorn is installed via the Longhorn Helm chart, so if install_longhorn is true
+          It is installed via Helm chart, so if install_longhorn is true
           and install_helm is false, the play will fail.
         type: bool
       longhorn_helm_chart_version:
@@ -214,7 +214,7 @@ argument_specs:
       install_whereabouts_ipam_plugin:
         description: |
           Whether to install whereabouts IPAM plugin.
-          Whereabouts is installed via the Headlamp Helm chart, so if install_whereabouts_ipam_plugin is true
+          It is installed via Helm chart, so if install_whereabouts_ipam_plugin is true
           and install_helm is false, the play will fail.
         type: bool
       whereabouts_ipam_plugin_helm_chart_version:
@@ -227,7 +227,7 @@ argument_specs:
       install_emberstack_kubernetes_secrets_reflector:
         description: |
           Whether to install the Emberstack Kubernetes Secrets Reflector.
-          It is installed via the Emberstack Kubernetes Secrets Reflector Helm chart, so if install_emberstack_kubernetes_secrets_reflector is true
+          It is installed via a Helm chart, so if install_emberstack_kubernetes_secrets_reflector is true
           and install_helm is false, the play will fail.
         type: bool
       emberstack_kubernetes_secrets_reflector_helm_chart_version:
@@ -235,5 +235,18 @@ argument_specs:
         type: str
       emberstack_kubernetes_secrets_reflector_helm_extra_args:
         description: 'List of extra arguments to pass to Helm when installing the Emberstack Kubernetes Secrets Reflector Helm chart'
+        type: list
+        elements: str
+      install_stakater_reloader:
+        description: |
+          Whether to install the Stakater Reloader.
+          It is installed via a Helm chart, so if install_stakater_reloader is true
+          and install_helm is false, the play will fail.
+        type: bool
+      stakater_reloader_helm_chart_version:
+        description: 'The version of the Stakater Reloader helm chart to install'
+        type: str
+      stakater_reloader_helm_extra_args:
+        description: 'List of extra arguments to pass to Helm when installing the Stakater Reloader Helm chart'
         type: list
         elements: str

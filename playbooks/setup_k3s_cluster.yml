@@ -29,6 +29,9 @@
     - role: reflector
       tags: [reflector]
       when: install_emberstack_kubernetes_secrets_reflector
+    - role: reloader
+      tags: [reloader]
+      when: install_stakater_reloader
     - role: headlamp_token
       tags: [headlamp, headlamp_token]
       when: install_headlamp
