@@ -155,3 +155,22 @@ Validate playbooks and roles for lint errors:
 ```sh
 ./validate-lint
 ```
+
+## Publishing a new version of the Galaxy collection
+
+* Update the version in galaxy.yml
+* Run:
+    ```sh
+    ansible-galaxy collection build
+    ```
+* Publish the collection, either by CLI:
+    ```sh
+    ansible-galaxy collection publish roncemer-k3s_cluster_ansible-1.0.0.tar.gz --api-key <ansible-galaxy-token-goes-here>
+    ```
+  or by going to [https://galaxy.ansible.com/ui/my-namespaces/](https://galaxy.ansible.com/ui/my-namespaces/), clicking *View collections* under the correct namespace, clicking *Upload collection*, and selecting the collection tarball.
+
+* Create and push a git tag with the same version as the collection version (replace 1.0.0 with the correct version everywhere in the commands below):
+    ```sh
+    git tag -a v1.0.0 -m "Release version 1.0.0"
+    git push origin v1.0.0
+    ``` 
