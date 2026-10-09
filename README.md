@@ -64,7 +64,7 @@ ansible-playbook -i "$INVPATH" -u ansible --become-password-file "$BECOMEPWFILE"
 
 At the end of the playbook, there should be a Headlamp token.  Point a browser to <http://k3s-test-01.local/headlamp>, copy and paste the token into the token field, and click *Authenticate*.  Click on *Workloads* -> *Pods* to see all of the pods which are running on the cluster.
 
-You can also access the Longhorn dashboard at [http://k3s-test-01.local/longhorn]<http://k3s-test-01.local/longhorn>.  The login credentials are set in the `longhorn_ui_credentials` setting in [roles/init/defaults/main.yml](roles/init/defaults/main.yml), and can be overridden in your inventory (or your calling role or playbook, if you're writing your own playbooks or roles).
+You can also access the Longhorn dashboard at <http://k3s-test-01.local/longhorn>.  The login credentials are set in the `longhorn_ui_credentials` setting in [roles/init/defaults/main.yml](roles/init/defaults/main.yml), and can be overridden in your inventory (or your calling role or playbook, if you're writing your own playbooks or roles).
 
 ## Testing a Longhorn Shared Volume Between Two Pods
 
