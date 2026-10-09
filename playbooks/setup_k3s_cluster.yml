@@ -11,6 +11,9 @@
     - role: helm
       tags: [helm]
       when: install_helm
+    - role: whereabouts
+      tags: [whereabouts]
+      when: install_whereabouts_ipam_plugin
     - role: cni_plugins
       tags: [cni_plugins]
       when: install_cni_plugins

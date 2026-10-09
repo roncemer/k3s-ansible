@@ -84,6 +84,19 @@ argument_specs:
       multus_cni_protocol_version:
         description: 'The CNI protocol version for multus-cni'
         type: str
+      install_whereabouts_ipam_plugin:
+        description: |
+          Whether to install whereabouts IPAM plugin.
+          Whereabouts is installed via the Headlamp Helm chart, so if install_whereabouts_ipam_plugin is true
+          and install_helm is false, the play will fail.
+        type: bool
+      whereabouts_ipam_plugin_helm_chart_version:
+        description: 'The version of whereabouts helm chart to install'
+        type: str
+      whereabouts_ipam_plugin_helm_extra_args:
+        description: 'List of extra arguments to pass to Helm when installing the Whereabouts Helm chart'
+        type: list
+        elements: str
       install_helm:
         description: |
           Whether to install Helm.  Note that Helm is required in order to install a lot of other packages,
@@ -95,8 +108,9 @@ argument_specs:
         type: str
       install_headlamp:
         description: |
-          Whether to install Headlamp.  Headlamp is installed via the Headlamp Helm chart, so if
-          install_headlamp is true and install_helm is false, the play will fail.
+          Whether to install Headlamp.
+          Headlamp is installed via the Headlamp Helm chart, so if install_headlamp is true
+          and install_helm is false, the play will fail.
         type: bool
       headlamp_helm_chart_version:
         description: 'The Headlamp Helm chart version to install'
@@ -144,8 +158,8 @@ argument_specs:
       install_longhorn:
         description: |
           Whether to install Longhorn block storage.
-          Longhorn is installed via the Longhorn Helm chart, so if install_longhorn is true and install_helm
-          is false, the play will fail.
+          Longhorn is installed via the Longhorn Helm chart, so if install_longhorn is true
+          and install_helm is false, the play will fail.
         type: bool
       longhorn_helm_chart_version:
         description: 'The Longhorn Helm chart version to install'

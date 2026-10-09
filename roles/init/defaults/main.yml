@@ -23,6 +23,10 @@ install_multus_cni: false
 multus_cni_version: "v4.3.1"
 multus_cni_protocol_version: "1.0.0"
 
+install_whereabouts_ipam_plugin: true
+whereabouts_ipam_plugin_helm_chart_version: "0.9.4"
+whereabouts_ipam_plugin_helm_extra_args: []
+
 install_helm: true
 helm_version: "v4.3.0"
 
