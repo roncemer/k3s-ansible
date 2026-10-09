@@ -4,3 +4,7 @@ ansible_become_exe: /usr/bin/sudo.ws
 k3s_storage_dir: "/storage"
 install_cni_plugins: true
 install_multus_cni: true
+
+longhorn_ui_credentials:
+  - username: "lhadmin"
+    password: "adMiNlH3223"
