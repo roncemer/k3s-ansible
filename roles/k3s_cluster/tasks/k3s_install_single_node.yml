@@ -43,6 +43,10 @@
       - 'k3s_cluster_k3s_api_host_ipv4: {{ k3s_cluster_k3s_api_host_ipv4 }}'
       - 'k3s_cluster_k3s_api_host_token: {{ k3s_cluster_k3s_api_host_token | regex_replace(".", "*") }}'
 
+# TODO: When the current node is the only server node in the cluster, we have to upgrade it differently.
+# See here: https://share.google/3XjE7stM4f4woQNuK
+# Specifically: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.32.1+k3s1 sh -
+
 #################################################################################
 # CORDON, DRAIN AND DELETE THE NODE FROM THE CLUSTER, UNINSTALL K3S, IF NEEDED. #
 #################################################################################
