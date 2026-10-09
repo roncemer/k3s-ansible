@@ -27,6 +27,7 @@
       become: true
       ansible.builtin.slurp:
         src: "/var/lib/rancher/k3s/server/token"
+      no_log: true
       # We have to default this to a non-empty host in order to avoid getting an error about an empty delegate_to value,
       # even though the "when" condition would prevent this task from running in that case.
       delegate_to: "{{ k3s_cluster_k3s_api_host | default(k3s_install_host, true) }}"
@@ -35,6 +36,7 @@
     - name: "Decode the server token for the k3s API host into the current host"
       ansible.builtin.set_fact:
         k3s_cluster_k3s_api_host_token: "{{ k3s_cluster_k3s_api_host_token_file_encoded['content'] | b64decode | trim }}"
+      no_log: true
 
 - name: "Show the k3s API host and token for joining this host to the cluster"
   ansible.builtin.debug:
@@ -134,6 +136,7 @@
               {{ install_k3s_exec_args | join(' ') }}
       args:
         executable: /bin/bash
+      no_log: true
       vars:
         install_k3s_exec_args: |
           {{

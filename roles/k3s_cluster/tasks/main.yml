@@ -70,6 +70,7 @@
   when: inventory_hostname == k3s_install_host and k3s_cluster_k3s_installed_info.need_install_or_reinstall
   ansible.builtin.include_tasks:
     file: "k3s_install_single_node.yml"
+  # Intentional: reinstall only hosts in the current play; cluster topology is based on groups[k3s_hosts_group].
   loop: '{{ ansible_play_hosts_all }}'
   loop_control:
     loop_var: k3s_install_host
