@@ -18,6 +18,7 @@
         update_cache: true
 
     - name: "Remove the multipath-tools package, because it interferes with Longhorn filesystem creation"
+      when: install_longhorn
       ansible.builtin.package:
         name:
           - multipath-tools
@@ -25,6 +26,7 @@
         update_cache: true
 
     - name: "Kill any running multipath processes"
+      when: install_longhorn
       ansible.builtin.command: "pkill -9 multipath"
       changed_when: false
       failed_when: false
