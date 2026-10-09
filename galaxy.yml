@@ -42,7 +42,7 @@ dependencies:
 repository: https://github.com/roncemer/k3s-cluster-ansible
 
 # The URL to any online docs
-documentation: https://github.com/roncemer/k3s-cluster-ansible/README.md
+documentation: https://github.com/roncemer/k3s-cluster-ansible/blob/main/README.md
 
 # The URL to the homepage of the collection/project
 homepage: https://github.com/roncemer/k3s-cluster-ansible
@@ -63,7 +63,6 @@ build_ignore:
   - examples
   - "venv"
   - "tests"
-  - "*.md"
   - "Makefile"
   - "validate-lint"
 
