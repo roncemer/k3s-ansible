@@ -69,34 +69,6 @@ argument_specs:
           This must be an odd number, and must be less than or equal to the number of hosts in the inventory hosts
           group specified in the k3s_hosts_group fact.
         type: int
-      install_cni_plugins:
-        description: 'Whether to install the CNI plugins on the nodes'
-        type: bool
-      cni_plugins_version:
-        description: 'The version of the CNI plugins to install'
-        type: str
-      install_multus_cni:
-        description: 'Whether to install multus-cni'
-        type: bool
-      multus_cni_version:
-        description: 'The version of multus-cni to install'
-        type: str
-      multus_cni_protocol_version:
-        description: 'The CNI protocol version for multus-cni'
-        type: str
-      install_whereabouts_ipam_plugin:
-        description: |
-          Whether to install whereabouts IPAM plugin.
-          Whereabouts is installed via the Headlamp Helm chart, so if install_whereabouts_ipam_plugin is true
-          and install_helm is false, the play will fail.
-        type: bool
-      whereabouts_ipam_plugin_helm_chart_version:
-        description: 'The version of whereabouts helm chart to install'
-        type: str
-      whereabouts_ipam_plugin_helm_extra_args:
-        description: 'List of extra arguments to pass to Helm when installing the Whereabouts Helm chart'
-        type: list
-        elements: str
       install_helm:
         description: |
           Whether to install Helm.  Note that Helm is required in order to install a lot of other packages,
@@ -224,3 +196,44 @@ argument_specs:
         type: list
         elements: dict
         no_log: true
+      install_cni_plugins:
+        description: 'Whether to install the CNI plugins on the nodes'
+        type: bool
+      cni_plugins_version:
+        description: 'The version of the CNI plugins to install'
+        type: str
+      install_multus_cni:
+        description: 'Whether to install multus-cni'
+        type: bool
+      multus_cni_version:
+        description: 'The version of multus-cni to install'
+        type: str
+      multus_cni_protocol_version:
+        description: 'The CNI protocol version for multus-cni'
+        type: str
+      install_whereabouts_ipam_plugin:
+        description: |
+          Whether to install whereabouts IPAM plugin.
+          Whereabouts is installed via the Headlamp Helm chart, so if install_whereabouts_ipam_plugin is true
+          and install_helm is false, the play will fail.
+        type: bool
+      whereabouts_ipam_plugin_helm_chart_version:
+        description: 'The version of whereabouts helm chart to install'
+        type: str
+      whereabouts_ipam_plugin_helm_extra_args:
+        description: 'List of extra arguments to pass to Helm when installing the Whereabouts Helm chart'
+        type: list
+        elements: str
+      install_emberstack_kubernetes_secrets_reflector:
+        description: |
+          Whether to install the Emberstack Kubernetes Secrets Reflector.
+          It is installed via the Emberstack Kubernetes Secrets Reflector Helm chart, so if install_emberstack_kubernetes_secrets_reflector is true
+          and install_helm is false, the play will fail.
+        type: bool
+      emberstack_kubernetes_secrets_reflector_helm_chart_version:
+        description: 'The version of the Emberstack Kubernetes Secrets Reflector helm chart to install'
+        type: str
+      emberstack_kubernetes_secrets_reflector_helm_extra_args:
+        description: 'List of extra arguments to pass to Helm when installing the Emberstack Kubernetes Secrets Reflector Helm chart'
+        type: list
+        elements: str

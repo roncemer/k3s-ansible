@@ -11,6 +11,12 @@
     - role: helm
       tags: [helm]
       when: install_helm
+    - role: longhorn
+      tags: [longhorn]
+      when: install_longhorn
+    - role: headlamp
+      tags: [headlamp, install_headlamp]
+      when: install_headlamp
     - role: whereabouts
       tags: [whereabouts]
       when: install_whereabouts_ipam_plugin
@@ -20,12 +26,9 @@
     - role: multus_cni
       tags: [multus_cni]
       when: install_multus_cni
-    - role: longhorn
-      tags: [longhorn]
-      when: install_longhorn
-    - role: headlamp
-      tags: [headlamp, install_headlamp]
-      when: install_headlamp
+    - role: reflector
+      tags: [reflector]
+      when: install_emberstack_kubernetes_secrets_reflector
     - role: headlamp_token
       tags: [headlamp, headlamp_token]
       when: install_headlamp

@@ -9,7 +9,7 @@
       vars:
         helm_namespace: "default"
         helm_release_name: "whereabouts"
-        helm_repo_name: "whereabouts"
+        helm_repo_name: ""
         helm_chart_name: "whereabouts-chart"
         helm_chart_url: "{{ whereabouts_ipam_plugin_helm_chart_url }}"
         helm_chart_version: "{{ whereabouts_ipam_plugin_helm_chart_version }}"

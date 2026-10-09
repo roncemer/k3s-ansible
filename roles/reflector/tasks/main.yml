@@ -1,0 +1,16 @@
+- name: "Run Emberstack Kubernetes Secrets Reflector installation tasks"
+  run_once: true
+  become: true
+  become_user: "{{ k3s_user if create_k3s_user else superuser_name }}"
+  block:
+    - name: "Install or upgrade Emberstack Kubernetes Secrets Reflector via the Emberstack Kubernetes Secrets Reflector Helm chart"
+      ansible.builtin.include_role:
+        name: helm_chart_install_or_upgrade
+      vars:
+        helm_namespace: "default"
+        helm_release_name: "reflector"
+        helm_repo_name: ""
+        helm_chart_name: "reflector"
+        helm_chart_url: "{{ emberstack_kubernetes_secrets_reflector_helm_chart_url }}"
+        helm_chart_version: "{{ emberstack_kubernetes_secrets_reflector_helm_chart_version }}"
+        helm_args: "{{ emberstack_kubernetes_secrets_reflector_helm_extra_args }}"
