@@ -21,18 +21,9 @@
           set -e
           set -o pipefail
 
-          set +e
-          secret_yaml=$(kubectl -n longhorn-system get secret longhorn-dashboard-users -o yaml 2>/dev/null)
-          get_secret_retval="$?"
-          set +e
-          if [ "$get_secret_retval" -ne 0 ]; then
-              exit "$get_secret_retval"
-          fi
-
-          echo "$secret_yaml" | yq -r '.data.auth' - | base64 --decode
+          kubectl -n longhorn-system get secret longhorn-dashboard-users --ignore-not-found -o yaml 2>/dev/null | yq -r '.data.auth' - | base64 --decode
       args:
         executable: /bin/bash
-      failed_when: 'longhorn_existing_htpasswd_contents_result.rc not in [0, 1]'
       changed_when: false
       register: longhorn_existing_htpasswd_contents_result
 
