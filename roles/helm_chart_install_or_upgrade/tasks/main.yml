@@ -12,7 +12,7 @@
       {% if not helm_chart_url.startswith('oci://') %}
       set +e
       # Determine whether the Helm repository needs to be added; if so, add it.
-      echo "Determining whether the "{{ helm_repo_name | quote }}" helm repository needs to be added"
+      printf "Determining whether the %s helm repository needs to be added\n" {{ helm_repo_name | quote }}
       if ! helm repo list | grep -q {{ ('^' + helm_repo_name + '\s') | quote }}; then
           echo "Adding the helm repository {{ helm_repo_name | quote }}"
           helm repo add {{ helm_repo_name | quote }} {{ helm_chart_url | quote }} || true
@@ -25,14 +25,14 @@
 
       set +e
       # Determine whether the release is already installed.
-      echo "Determining whether the "{{ helm_release_name | quote }}" release is already installed"
+      printf "Determining whether the %s release is already installed\n" {{ helm_release_name | quote }}
       helm --namespace {{ helm_namespace | quote }} status {{ helm_release_name | quote }} >/dev/null 2>&1
       helm_status_retval="$?"
       set -e
 
       # If the release is not installed, install it and exit with a special code to indicate a change.
       if [ "$helm_status_retval" -ne 0 ]; then
-          echo "Installing "{{ helm_release_name | quote }}" via the Helm chart"
+          printf "Installing the %s release via the Helm chart\n" {{ helm_release_name | quote }}
           helm install {{ helm_release_name | quote }} {{ helm_chart_ref | quote }} \
               --namespace {{ helm_namespace | quote }} \
               --version {{ helm_chart_version | quote }} \
@@ -41,13 +41,13 @@
       fi
 
       set +e
-      echo "Determining the installed Helm chart version of the "{{ helm_release_name | quote }}" release"
+      printf "Determining the installed Helm chart version of the %s release\n" {{ helm_release_name | quote }}
       installed_helm_chart_version=$(helm -n {{ helm_namespace | quote }} list --selector name={{ helm_release_name | quote }} -o json | jq -r '.[] | .chart' | sed -e 's/^'{{ helm_chart_name | quote }}'-//g')
       echo "Installed Helm chart version: ${installed_helm_chart_version}"
       set -e
 
       set +e
-      echo "Determining whether a helm upgrade for the "{{ helm_release_name | quote }}" release would result in any changes"
+      printf "Determining whether a helm upgrade for the %s release would result in any changes\n" {{ helm_release_name | quote }}
       helm template {{ helm_release_name | quote }} {{ helm_chart_ref | quote }} \
         --namespace {{ helm_namespace | quote }} \
         --version {{ helm_chart_version | quote }} \
@@ -67,14 +67,14 @@
       set -e
 
       if [ "$installed_helm_chart_version" != {{ helm_chart_version | quote }} ] ||[ "$helm_template_kubectl_diff_retval" -ne 0 ]; then
-          echo "Upgrading "{{ helm_release_name | quote }}" via the Helm chart"
+          printf "Upgrading the %s release via the Helm chart\n" {{ helm_release_name | quote }}
           helm upgrade {{ helm_release_name | quote }} {{ helm_chart_ref | quote }} \
               --namespace {{ helm_namespace | quote }} \
               --version {{ helm_chart_version | quote }} \
               "${var_args[@]}"
           exit 99
       else
-          echo "Helm release "{{ helm_release_name | quote }}" is already up-to-date"
+          printf "Helm release %s is already up-to-date\n" {{ helm_release_name | quote }}
       fi
   args:
     executable: /bin/bash
