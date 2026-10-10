@@ -20,7 +20,7 @@ NOTE: Regardless of whether you are using VMs on your desktop, hosted VMs, or re
 
 If you're not running on MacOS, you can use a different virtual machine package (VirtualBox, etc.) to create the VMs, but once the VMs are created and accessible from your laptop, the instructions are about the same.
 
-## Test using the examples diretory
+## Test using the examples directory
 
 Change into the *examples* directory.  You will be working from there.
 ```sh
