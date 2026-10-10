@@ -15,7 +15,7 @@
       printf "Determining whether the %s helm repository needs to be added\n" {{ helm_repo_name | quote }}
       if ! helm repo list | grep -q {{ ('^' + helm_repo_name + '\s') | quote }}; then
           printf "Adding the helm repository: %s\n" {{ helm_repo_name | quote }}
-          helm repo add {{ helm_repo_name | quote }} {{ helm_chart_url | quote }} || true
+          helm repo add {{ helm_repo_name | quote }} {{ helm_chart_url | quote }}
       fi
       set -e
 
