@@ -35,6 +35,9 @@
     - role: cert_manager
       tags: [cert_manager]
       when: install_cert_manager
+    - role: keepalived_cluster_load_balancer
+      tags: [keepalived_cluster_load_balancer]
+      when: install_keepalived_cluster_load_balancer
     - role: headlamp_token
       tags: [headlamp, headlamp_token]
       when: install_headlamp

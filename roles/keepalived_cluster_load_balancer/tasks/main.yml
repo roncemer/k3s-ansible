@@ -1,0 +1,125 @@
+- name: "Set up or tear down the Keepalived cluster load balancer"
+  become: true
+  become_user: "{{ superuser_name }}"
+  block:
+    - name: "Set up the Keepalived cluster load balancer"
+      when: (cluster_load_balancer_services | length) > 0
+      block:
+        - name: "Install keepalived"
+          ansible.builtin.package:
+            name:
+              - keepalived
+            state: present
+            update_cache: true
+
+        - name: "Ensure that the /etc/keepalived directory exists"
+          ansible.builtin.file:
+            path: "/etc/keepalived"
+            state: directory
+            owner: "{{ superuser_name }}"
+            group: "{{ superuser_group }}"
+            mode: "0755"
+
+        - name: "Ensure that the /etc/keepalived/conf.d directory exists"
+          ansible.builtin.file:
+            path: "/etc/keepalived/conf.d"
+            state: directory
+            owner: "{{ superuser_name }}"
+            group: "{{ superuser_group }}"
+            mode: "0755"
+
+        - name: "Configure the keepalived main configuration file"
+          ansible.builtin.template:
+            src: keepalived.conf.j2
+            dest: "/etc/keepalived/keepalived.conf"
+            owner: "{{ superuser_name }}"
+            group: "{{ superuser_group }}"
+            mode: "0644"
+          notify: "Restart keepalived"
+
+        - name: "Template the keepalived virtual router configuration files"
+          ansible.builtin.template:
+            src: keepalived_service.conf.j2
+            dest: "/etc/keepalived/conf.d/k3s-{{ current_lb_service.vrrp_instance_name }}.conf"
+            owner: "{{ superuser_name }}"
+            group: "{{ superuser_group }}"
+            mode: "0644"
+          loop: "{{ cluster_load_balancer_services }}"
+          loop_control:
+            loop_var: current_lb_service
+          vars:
+            vrrp_instance_state: '{{ "MASTER" if groups[k3s_hosts_group].index(inventory_hostname) == 0 else "BACKUP" }}'
+            vrrp_instance_priority: '{{ 150 - ((150 / (groups[k3s_hosts_group] | length)) * groups[k3s_hosts_group].index(inventory_hostname)) }}'
+          notify: "Restart keepalived"
+
+        - name: "Create an empty list of all k3s-managed keepalived config files which should exist"
+          ansible.builtin.set_fact:
+            k3s_managed_keepalived_should_exist_conf_files: []
+
+        - name: "Populate the list of all k3s-managed keepalived config files which should exist"
+          loop: "{{ cluster_load_balancer_services }}"
+          ansible.builtin.set_fact:
+            k3s_managed_keepalived_should_exist_conf_files: '{{ k3s_managed_keepalived_should_exist_conf_files + ["k3s-" + current_lb_service.vrrp_instance_name + ".conf"] }}'
+          loop_control:
+            loop_var: current_lb_service
+
+        - name: "Find all k3s-managed keepalived config files which actually exist"
+          ansible.builtin.find:
+            paths: "/etc/keepalived/conf.d"
+            patterns: "k3s-*.conf"
+          register: k3s_managed_keepalived_existing_conf_files
+
+        - name: "Convert the list of k3s-managed keepalived config files which actually exist into a list of base filenames"
+          ansible.builtin.set_fact:
+            k3s_managed_keepalived_existing_conf_files: '{{ k3s_managed_keepalived_existing_conf_files.files | map(attribute="path") | map("basename") | list }}'
+
+        - name: "Build a list of k3s-managed keepalived config files which actually exist but should not"
+          ansible.builtin.set_fact:
+            k3s_managed_keepalived_existing_conf_files_to_delete: '{{ k3s_managed_keepalived_existing_conf_files | difference(k3s_managed_keepalived_should_exist_conf_files) }}'
+
+        - name: "Delete the k3s-managed keepalived config files which actually exist but should not"
+          ansible.builtin.file:
+            path: '{{ "/etc/keepalived/conf.d/" + k3s_managed_keepalived_existing_conf_file_to_delete }}'
+            state: absent
+          loop: '{{ k3s_managed_keepalived_existing_conf_files_to_delete }}'
+          loop_control:
+            loop_var: k3s_managed_keepalived_existing_conf_file_to_delete
+          notify: "Restart keepalived"
+
+        - name: "Enable and start keepalived"
+          ansible.builtin.service:
+            name: keepalived
+            state: started
+            enabled: true
+
+        - name: "Flush handlers"
+          ansible.builtin.meta: flush_handlers
+
+    # When cluster_load_balancer_services is empty, stop, disable and uninstall keepalived
+    # (not failing if the service file doesn't exist), and remove the /etc/keepalived directory.
+    - name: "Tear down the Keepalived cluster load balancer"
+      when: (cluster_load_balancer_services | length) == 0
+      block:
+        - name: "Gather service facts"
+          ansible.builtin.service_facts:
+
+        - name: "Stop and disable keepalived"
+          when:
+            - (cluster_load_balancer_services | length) == 0
+            - '"keepalived.service" in ansible_facts.services'
+          ansible.builtin.service:
+            name: keepalived
+            state: stopped
+            enabled: false
+
+        - name: "Uninstall keepalived"
+          ansible.builtin.package:
+            name:
+              - keepalived
+            state: absent
+            update_cache: true
+
+        - name: "Remove the /etc/keepalived directory"
+          ansible.builtin.file:
+            path: "/etc/keepalived"
+            state: absent

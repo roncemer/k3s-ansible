@@ -1,0 +1,39 @@
+vrrp_instance {{ current_lb_service.vrrp_instance_name }} {
+    state {{ vrrp_instance_state }}
+    interface {{ current_lb_service.network_interface }}
+    virtual_router_id {{ current_lb_service.virtual_router_id | int | string }}
+    priority {{ vrrp_instance_priority | int | string }}
+    advert_int 1
+    virtual_ipaddress {
+        {{ current_lb_service.ip_address }}
+    }
+}
+
+{% for port in current_lb_service.ports %}
+virtual_server {{ current_lb_service.ip_address }} {{ port.port_number }} {
+    delay_loop 6
+    lb_algo rr
+    lb_kind NAT
+    protocol TCP
+
+{% for host in groups["all_hosts"] %}
+    real_server {{ hostvars[host]['ansible_default_ipv4']['address'] }} {{ port.port_number }} {
+        weight 1
+{% if port.health_check_protocol == 'http' or port.health_check_protocol == 'https' %}
+        {{ "SSL_GET" if port.health_check_protocol == 'https' else "HTTP_GET" }} {
+            url {
+                path {{ port.health_check_path }}
+                status_code {{ port.health_check_healthy_status_codes }}
+            }
+            connect_timeout 3
+        }
+{% elif port.health_check_protocol == 'tcp' %}
+        TCP_CHECK {
+            connect_timeout 3
+        }
+{% endif %}
+    }
+{% endfor %}
+}
+
+{% endfor %}
