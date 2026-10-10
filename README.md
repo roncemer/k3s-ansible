@@ -174,3 +174,4 @@ Validate playbooks and roles for lint errors:
     git tag -a v1.0.0 -m "Release version 1.0.0"
     git push origin v1.0.0
     ``` 
+* In GitHub, create a release from the new tag.  Upload the newly built tarball to the new release.
