@@ -32,6 +32,9 @@
     - role: reloader
       tags: [reloader]
       when: install_stakater_reloader
+    - role: cert_manager
+      tags: [cert_manager]
+      when: install_cert_manager
     - role: headlamp_token
       tags: [headlamp, headlamp_token]
       when: install_headlamp

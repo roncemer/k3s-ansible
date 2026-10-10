@@ -1,0 +1,6 @@
+cert_manager_helm_chart_url: "oci://quay.io/jetstack/charts/cert-manager"
+
+cert_manager_helm_base_args:
+  - "--create-namespace"
+  - "--set"
+  - "crds.enabled=true"
